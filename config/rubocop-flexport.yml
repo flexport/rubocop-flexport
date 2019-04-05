@@ -1,0 +1,8 @@
+Flexport/AutocorrectableLineLength:
+  Enabled: true
+  Max: 100
+  Exclude:
+    - "config/routes/*"
+
+Flexport/IndentMultilineClosingBrace:
+  Enabled: true

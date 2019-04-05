@@ -1,0 +1,148 @@
+Layout/AccessModifierIndentation:
+  Enabled: true
+
+Layout/AlignHash:
+  Enabled: true
+  EnforcedColonStyle: key
+  EnforcedLastArgumentHashStyle: always_inspect
+
+Layout/AlignParameters:
+  Enabled: true
+  EnforcedStyle: with_first_parameter
+
+Layout/BlockAlignment:
+  Enabled: true
+  EnforcedStyleAlignWith: start_of_block
+
+Layout/CaseIndentation:
+  Enabled: true
+
+# Note: We use IndentMultilineBrace instead.
+Layout/ClosingParenthesisIndentation:
+  Enabled: false
+
+Layout/DotPosition:
+  EnforcedStyle: leading
+
+Layout/EmptyLineBetweenDefs:
+  Enabled: true
+
+Layout/EmptyLines:
+  Enabled: true
+
+# This was enabled by default here:
+# https://github.com/rubocop-hq/rubocop/pull/6235
+# We don't have a strong preference on it (yet?).
+Layout/EmptyLineAfterGuardClause:
+  Enabled: false
+
+Layout/EmptyLinesAroundAccessModifier:
+  Enabled: true
+
+Layout/EmptyLinesAroundBlockBody:
+  Enabled: true
+
+Layout/EmptyLinesAroundClassBody:
+  Enabled: true
+
+# Why AllowForAlignment: false?
+# 1) Cleaner diffs. For example, when you add a longer key to a hash,
+#    you need to update all the other rows to maintain alignment. This
+#    means your diffs become harder to read. It looks like more is changing
+#    than actually is.
+# 2) Better to have one way to do things than two.
+# 3) You can still use rubocop:disable comments in exceptional cases.
+Layout/ExtraSpacing:
+  Enabled: true
+  AllowForAlignment: false
+
+Layout/FirstArrayElementLineBreak:
+  Enabled: true
+
+Layout/FirstHashElementLineBreak:
+  Enabled: true
+
+Layout/FirstMethodArgumentLineBreak:
+  Enabled: true
+
+Layout/IndentArray:
+  Enabled: true
+  EnforcedStyle: consistent
+
+Layout/IndentHash:
+  Enabled: true
+  EnforcedStyle: consistent
+
+Layout/IndentationConsistency:
+  Enabled: true
+
+Layout/IndentationWidth:
+  Enabled: true
+
+Layout/LeadingCommentSpace:
+  Enabled: true
+
+Layout/MultilineArrayLineBreaks:
+  Enabled: true
+
+Layout/MultilineBlockLayout:
+  Enabled: true
+
+Layout/MultilineHashBraceLayout:
+  Enabled: true
+
+Layout/MultilineHashKeyLineBreaks:
+  Enabled: true
+
+Layout/MultilineMethodArgumentLineBreaks:
+  Enabled: true
+
+Layout/MultilineMethodCallBraceLayout:
+  Enabled: true
+
+Layout/MultilineMethodCallIndentation:
+  Enabled: true
+  EnforcedStyle: indented
+
+Layout/MultilineOperationIndentation:
+  Enabled: true
+
+# This doesn't play nice with private_class_method.
+Layout/RescueEnsureAlignment:
+  Enabled: false
+
+Layout/SpaceAfterComma:
+  Enabled: true
+
+Layout/SpaceAroundEqualsInParameterDefault:
+  Enabled: true
+
+Layout/SpaceAroundOperators:
+  Enabled: true
+
+Layout/SpaceBeforeBlockBraces:
+  Enabled: true
+
+Layout/SpaceBeforeFirstArg:
+  Enabled: false
+
+Layout/SpaceInsideBlockBraces:
+  Enabled: true
+  EnforcedStyle: space
+
+Layout/SpaceInsideHashLiteralBraces:
+  Enabled: true
+  EnforcedStyle: no_space
+
+Layout/SpaceInLambdaLiteral:
+  Enabled: true
+  SupportedStyles:
+    - require_no_space
+
+Layout/TrailingBlankLines:
+  Enabled: true
+  SupportedStyles:
+    - final_newline
+
+Layout/TrailingWhitespace:
+  Enabled: true

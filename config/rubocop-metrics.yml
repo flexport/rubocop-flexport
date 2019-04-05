@@ -1,0 +1,42 @@
+# Arbitrary limit.
+Metrics/AbcSize:
+  Max: 187
+
+Metrics/BlockLength:
+  Enabled: false
+
+# Arbitrary limit.
+Metrics/BlockNesting:
+  Max: 4
+
+Metrics/ClassLength:
+  Enabled: false
+
+# Arbitrary limit.
+Metrics/CyclomaticComplexity:
+  Max: 34
+
+Metrics/LineLength:
+  Max: 200
+  Exclude:
+    - "app/controllers/pages_controller.rb" # Contains lots of text.
+    - "app/controllers/careers_controller.rb" # Contains lots of text.
+    - "app/constants/**/*" # Long content.
+    - "app/graph/gql_types/**/*" # Long descriptions.
+    - "app/pdfs/**/*" # Lots of long strings.
+    - "app/models/public_app_copy/*" # Lots of long strings.
+    - "app/services/sentry/service.rb" # Long description.
+
+Metrics/MethodLength:
+  Enabled: false
+
+Metrics/ModuleLength:
+  Enabled: false
+
+# Arbitrary limit.
+Metrics/ParameterLists:
+  Max: 7
+
+# Arbitrary limit.
+Metrics/PerceivedComplexity:
+  Max: 39

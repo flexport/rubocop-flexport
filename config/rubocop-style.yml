@@ -1,0 +1,242 @@
+Style/AndOr:
+  Enabled: true
+
+Style/BlockDelimiters:
+  Enabled: true
+
+# This is a minor style preference. No need to be heavy-handed.
+Style/BracesAroundHashParameters:
+  Enabled: false
+
+# This is a minor style preference. No need to be heavy-handed.
+Style/ClassAndModuleChildren:
+  Enabled: false
+
+# We format TODOs like the following line:
+# TODO(dmnd): Make Rubocop understand our TODO formatting.
+Style/CommentAnnotation:
+  Enabled: false
+
+# This is a minor style preference. No need to be heavy-handed.
+Style/ConditionalAssignment:
+  Enabled: false
+
+Style/DateTime:
+  Enabled: false
+
+# No need to be heavy-handed, at least not yet.
+Style/Documentation:
+  Enabled: false
+
+# !! is a Ruby idiom for converting falsey to false and truthy to true.
+Style/DoubleNegation:
+  Enabled: false
+
+# By default this warns when explicitly returning nil. But that's useful to
+# communicate intent, so make it only warn for empty else clauses
+Style/EmptyElse:
+  EnforcedStyle: empty
+
+Style/ExpandPathArguments:
+  Enabled: true
+
+# We want to enable this, but it doesn't play nice with our TEAM comments.
+Style/FrozenStringLiteralComment:
+  Enabled: false
+
+# Style/GuardClause is meant to remove nesting from conditionals within
+# methods by simply returning early.
+#
+# This is confusing if there is a sequental set of conditional operations that
+# do not terminate. The rule will attempt to optimize just the last conditional
+# in the method, which, if followed, makes some weird looking code.
+Style/GuardClause:
+  Enabled: false
+
+Style/HashSyntax:
+  EnforcedStyle: ruby19
+
+# Sometimes explicit returns are more clear.
+Style/IfUnlessModifier:
+  Enabled: false
+
+# We've seen correctness issues with this cop, and its value is low.
+# https://github.com/flexport/flexport/pull/32743/commits/a1c1d54f9b30a073d08337da47dc1ee6eccd06ac#diff-3513a634c624a160fd16b2a88b66c25aL340
+Style/InverseMethods:
+  Enabled: false
+
+# Disabled because it makes GraphQL schemas awkward.
+Style/Lambda:
+  Enabled: false
+
+# Prefer some_lambda.call(arg1) over some_lambda.(arg1).
+Style/LambdaCall:
+  Enabled: true
+  EnforcedStyle: call
+  # JBuilders use their own lambda-like DSL.
+  Exclude:
+    - !ruby/regexp /.*.jbuilder/
+
+Style/MethodCallWithoutArgsParentheses:
+  Enabled: true
+
+Style/MethodCallWithArgsParentheses:
+  Enabled: true
+  IgnoreMacros: true
+  IncludedMacros: [
+    # Note: We need to include these to autoformat their params in specs.
+    "create",
+    "delete",
+    "get",
+    "patch",
+    "post",
+    "put",
+  ]
+  IgnoredMethods: [
+    "abort",
+    "define",
+    "describe",
+    "execute",
+    "gem",
+    "not_to",
+    "private",
+    "puts",
+    "raise",
+    "ruby",
+    "run",
+    "require",
+    "require_dependency",
+    "require_relative",
+    "source",
+    "to",
+    "to_not",
+    "yield",
+  ]
+  # TODO(kevin): explain this with a comment, fix, or move to .rubocop_todo.yml
+  Exclude:
+    - "db/**/*.rb"
+    - "engines/**/db/**/*.rb"
+    - "**/*.jbuilder"
+    - "config/**/*"
+    - "**/config.rb"
+
+Style/MixinGrouping:
+  Enabled: true
+
+Style/MultilineIfModifier:
+  Enabled: true
+
+Style/MutableConstant:
+  Enabled: true
+
+# This is a minor style preference. No need to be heavy-handed.
+Style/NegatedIf:
+  Enabled: false
+
+# This has bad interactions with MethodCallWithArgsParentheses
+# and is redudant with our configuration of that cop anyway.
+Style/NestedParenthesizedCalls:
+  Enabled: false
+
+# Style/Next is meant to remove nesting from conditionals within loops by
+# simply calling `next if something`.
+#
+# This fails when we use conditionals to do something in a loop, and then
+# continue. The rule will attempt to optimize just the last conditional in
+# the loop, which if followed, makes some weird looking code.
+Style/Next:
+  Enabled: false
+
+# Arbitrarily decided.
+Style/NumericLiterals:
+  MinDigits: 11
+
+# Arbitrarily decided.
+Style/NumericPredicate:
+  Enabled: false
+
+Style/ParenthesesAroundCondition:
+  Enabled: true
+
+Style/PercentLiteralDelimiters:
+  Enabled: true
+
+# Arbitrarily decided.
+Style/RaiseArgs:
+  Enabled: false
+
+# This has bugs.
+# https://github.com/rubocop-hq/rubocop/issues/5516
+Style/RedundantParentheses:
+  Enabled: false
+
+# We prefer explicit returns.
+Style/RedundantReturn:
+  Enabled: false
+
+# We don't care about this; and it can cause "SQL injection" warnings.
+Style/RedundantSelf:
+  Enabled: false
+
+# This can cause behavior changes.
+# The x && x.y to x&.y correction can break if x might be false instead of nil.
+Style/SafeNavigation:
+  Enabled: false
+
+Style/Semicolon:
+  Enabled: true
+  AllowAsExpressionSeparator: true
+
+Style/SingleLineMethods:
+  Enabled: false
+
+# Why double quotes instead of single quotes?
+# We follow GitHub's Ruby style guide here:
+# https://github.com/github/rubocop-github/blob/master/STYLEGUIDE.md#strings
+# Rails also uses double quotes:
+# https://github.com/rails/rails/blob/master/activerecord/lib/active_record.rb
+# Along with a lot of other open source Ruby projects:
+# https://github.com/rubocop-hq/rubocop/issues/5306#issuecomment-354449447
+Style/StringLiterals:
+  Enabled: true
+  EnforcedStyle: double_quotes
+
+Style/StringLiteralsInInterpolation:
+  Enabled: true
+
+# This is a minor style preference. No need to be heavy-handed.
+Style/SymbolArray:
+  Enabled: false
+
+# This seems potentially error-prone and isn't high value.
+# https://www.rubydoc.info/gems/rubocop/0.26.1/RuboCop/Cop/Style/SymbolProc
+Style/SymbolProc:
+  Enabled: false
+
+Style/TrailingCommaInArguments:
+  Enabled: true
+  EnforcedStyleForMultiline: comma
+
+Style/TrailingCommaInArrayLiteral:
+  Enabled: true
+  EnforcedStyleForMultiline: comma
+
+Style/TrailingCommaInHashLiteral:
+  Enabled: true
+  EnforcedStyleForMultiline: comma
+
+Style/TernaryParentheses:
+  Enabled: true
+  EnforcedStyle: require_parentheses_when_complex
+
+# This is a minor style preference. No need to be heavy-handed.
+Style/WordArray:
+  Enabled: false
+
+# No real value in preferring if some_var == "#{interpolated}" over if "#{interpolated}" == some_var
+Style/YodaCondition:
+  Enabled: false
+
+# This is a minor style preference. No need to be heavy-handed.
+Style/ZeroLengthPredicate:
+  Enabled: false

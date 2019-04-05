@@ -1,0 +1,8 @@
+require:
+  - "../lib/rubocop/flexport"
+
+inherit_from:
+  - "./rubocop-flexport.yml"
+  - "./rubocop-layout.yml"
+  - "./rubocop-metrics.yml"
+  - "./rubocop-style.yml"
