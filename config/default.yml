@@ -6,3 +6,6 @@ inherit_from:
   - "./rubocop-layout.yml"
   - "./rubocop-metrics.yml"
   - "./rubocop-style.yml"
+
+AllCops:
+  TargetRubyVersion: 2.3
