@@ -5,6 +5,7 @@ rvm:
   - 2.4
   - 2.5
 install:
+  - bundle update --bundler
   - bundle install
 script:
   - bundle exec rspec
