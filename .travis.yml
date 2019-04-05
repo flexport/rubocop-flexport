@@ -1,3 +1,11 @@
 language: ruby
+sudo: false
 rvm:
- - 2.3
+  - 2.3
+  - 2.4
+  - 2.5
+install:
+  - bundle install
+script:
+  - bundle exec rspec
+  - bundle exec rubocop
