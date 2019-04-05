@@ -14,5 +14,3 @@ gem 'rubocop-flexport'
 ```
 
 ## Usage
-
-Thanks to [rubocop-airbnb](https://github.com/airbnb/ruby) for the inspiration!
