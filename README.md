@@ -1,4 +1,4 @@
-# Rubocop::Flexport
+# RuboCop::Flexport
 
 This repo is for cops developed at Flexport that don't make sense to upstream
 into any of the existing RuboCop repos. When possible, we prefer upstreaming.
