@@ -1,0 +1,6 @@
+Flexport/NewGlobalModel:
+  Description: 'Disallows addition of new global models to `app/models`. Prefer Rails Engines or namespaces.'
+  Enabled: true
+  VersionAdded: '0.1.0'
+  GlobalModelsPath: 'app/models/'
+  AllowNamespacedGlobalModels: true

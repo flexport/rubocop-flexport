@@ -1,0 +1,12 @@
+Layout/ExtraSpacing:
+  Enabled: true
+  AllowForAlignment: false
+
+Metrics/BlockLength:
+  Enabled: true
+  Exclude:
+    - spec/**/*.rb
+
+Naming/FileName:
+  Exclude:
+    - lib/rubocop-flexport.rb
