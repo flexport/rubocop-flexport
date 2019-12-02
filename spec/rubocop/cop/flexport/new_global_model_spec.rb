@@ -126,4 +126,52 @@ RSpec.describe RuboCop::Cop::Flexport::NewGlobalModel do
       end
     end
   end
+
+  context 'monorepo fullpath' do
+    let(:config) do
+      RuboCop::Config.new(
+        'Flexport/NewGlobalModel' => {
+          'GlobalModelsPath' => 'flexport/app/models/',
+          'AllowNamespacedGlobalModels' => true
+        }
+      )
+    end
+
+    context 'when new global model file in monolith' do
+      let(:global_model_file) do
+        '/root/flexport/app/models/new_global_model.rb'
+      end
+
+      let(:source) do
+        <<~RUBY
+          class NewGlobalModel
+          ^^^^^^^^^^^^^^^^^^^^ Do not add new top-level global models in `app/models`. Prefer namespaced models like `app/models/foo/bar.rb` or or models inside Rails Engines.
+            FOO = 1
+          end
+        RUBY
+      end
+
+      it 'adds offenses' do
+        expect_offense(source, global_model_file)
+      end
+    end
+
+    context 'when new global model file in other service' do
+      let(:global_model_file) do
+        '/root/other_service/rails/app/models/new_global_model.rb'
+      end
+
+      let(:source) do
+        <<~RUBY
+          class NewModelInOtherService
+            FOO = 1
+          end
+        RUBY
+      end
+
+      it 'adds offenses' do
+        expect_no_offenses(source, global_model_file)
+      end
+    end
+  end
 end
