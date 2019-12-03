@@ -12,6 +12,12 @@ module RuboCop
       # Use RuboCop's standard `Exclude` file list parameter to exclude
       # existing global model files from counting as violations for this cop.
       #
+      # If you have a monorepo with multiple Rails services, you may wish to
+      # set GlobalModelsPath to something more specific than `app/models` so
+      # that it only matches the main monolith service and allows global
+      # models in other, smaller services. To do this, just set GlobalModelsPath
+      # to e.g. `flexport/app/models` in your `.rubocop.yml`.
+      #
       # @example AllowNamespacedGlobalModels: true (default)
       #   # When `AllowNamespacedGlobalModels` is true, the cop only forbids
       #   # additions at the top-level directory.
