@@ -7,6 +7,14 @@ Metrics/BlockLength:
   Exclude:
     - spec/**/*.rb
 
+Metrics/ClassLength:
+  Enabled: true
+  Max: 150
+
+Metrics/MethodLength:
+  Enabled: true
+  Max: 20
+
 Naming/FileName:
   Exclude:
     - lib/rubocop-flexport.rb
