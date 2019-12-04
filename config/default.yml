@@ -1,7 +1,7 @@
 Flexport/GlobalModelAccessFromEngine:
   Description: 'Do not directly access global models from within Rails Engines.'
   Enabled: false
-  VersionAdded: '2.4'
+  VersionAdded: '0.2.0'
   AutoCorrect: false
   EnginesPath: engines/
   GlobalModelsPath: app/models/
