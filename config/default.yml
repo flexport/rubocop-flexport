@@ -1,9 +1,10 @@
-Flexport/EngineApiViolation:
+Flexport/EngineApiBoundary:
   Description: 'Use Rails Engine APIs instead of arbitrary code access.'
   Enabled: false
   VersionAdded: '0.3.0'
   EnginesPath: 'engines/'
   UnprotectedEngines: []
+  EngineSpecificOverrides: []
 
 Flexport/GlobalModelAccessFromEngine:
   Description: 'Do not directly access global models from within Rails Engines.'

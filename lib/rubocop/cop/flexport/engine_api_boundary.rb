@@ -211,7 +211,8 @@ module RuboCop
             in_engine_file?(engine) ||
             in_legacy_dependent_file?(engine) ||
             through_api?(node) ||
-            whitelisted?(node, engine)
+            whitelisted?(node, engine) ||
+            engine_specific_override?(node)
           )
         end
 
@@ -292,6 +293,26 @@ module RuboCop
 
         def read_api_file(engine, file_basename)
           extract_api_list(engines_path, engine, file_basename)
+        end
+
+        def overrides_by_engine
+          overrides_by_engine = {}
+          raw_overrides = cop_config['EngineSpecificOverrides']
+          return overrides_by_engine if raw_overrides.nil?
+
+          raw_overrides.each do |raw_override|
+            engine = ActiveSupport::Inflector.camelize(raw_override['Engine'])
+            overrides_by_engine[engine] = raw_override['AllowedModels']
+          end
+          overrides_by_engine
+        end
+
+        def engine_specific_override?(node)
+          model_name = node.parent.source
+          model_names_allowed_by_override = overrides_by_engine[current_engine]
+          return false unless model_names_allowed_by_override
+
+          model_names_allowed_by_override.include?(model_name)
         end
       end
     end

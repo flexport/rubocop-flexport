@@ -32,7 +32,8 @@ RSpec.describe RuboCop::Cop::Flexport::EngineApiBoundary do
                       'engines/my_engine',
                       'engines/other_engine',
                       'engines/generic_name',
-                      'engines/unprotected_engine'
+                      'engines/unprotected_engine',
+                      'engines/override_engine'
                     ])
     )
     allow(File).to(
@@ -430,6 +431,52 @@ RSpec.describe RuboCop::Cop::Flexport::EngineApiBoundary do
   describe '#external_dependency_checksum' do
     it 'returns a string' do
       expect(cop.external_dependency_checksum.is_a?(String)).to be(true)
+    end
+  end
+
+  context 'engine-specific overrides' do
+    context 'when defined' do
+      let(:file) do
+        '/root/engines/my_engine/app/controllers/my_engine/foo_controller.rb'
+      end
+
+      let(:config) do
+        RuboCop::Config.new(
+          'Flexport/EngineApiBoundary' => {
+            'UnprotectedEngines' => ['FooIgnoredEngine'],
+            'EnginesPath' => 'engines',
+            'EngineSpecificOverrides' => [{
+              'Engine' => 'my_engine',
+              'AllowedModels' => ['OverrideEngine::AllowedModel']
+            }]
+          }
+        )
+      end
+
+      context 'when allowed model' do
+        let(:source) do
+          <<~RUBY
+            OverrideEngine::AllowedModel.first
+          RUBY
+        end
+
+        it 'does not add any offenses' do
+          expect_no_offenses(source, file)
+        end
+      end
+
+      context 'when not allowed model' do
+        let(:source) do
+          <<~RUBY
+            OverrideEngine::NotAllowedDelivery.first
+            ^^^^^^^^^^^^^^ Direct access of OverrideEngine engine. Only access engine via OverrideEngine::Api.
+          RUBY
+        end
+
+        it 'adds offenses' do
+          expect_offense(source, file)
+        end
+      end
     end
   end
 end
