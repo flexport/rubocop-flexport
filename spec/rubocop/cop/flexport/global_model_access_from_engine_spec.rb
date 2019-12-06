@@ -133,7 +133,7 @@ RSpec.describe RuboCop::Cop::Flexport::GlobalModelAccessFromEngine, :config do
       let(:source) do
         <<~RUBY
           SomeGlobalModel.find(123)
-          ^^^^^^^^^^^^^^^ Direct access of global model from within Rails Engine.
+          ^^^^^^^^^^^^^^^ Direct access of global model `SomeGlobalModel` from within Rails Engine.
         RUBY
       end
 
@@ -147,7 +147,7 @@ RSpec.describe RuboCop::Cop::Flexport::GlobalModelAccessFromEngine, :config do
         <<~RUBY
           class MyEngine::Foo < ApplicationModel
             has_one :some_global_model, class_name: "SomeGlobalModel", inverse_of: :foo
-                                                    ^^^^^^^^^^^^^^^^^ Direct access of global model from within Rails Engine.
+                                                    ^^^^^^^^^^^^^^^^^ Direct access of global model `SomeGlobalModel` from within Rails Engine.
           end
         RUBY
       end
@@ -162,7 +162,7 @@ RSpec.describe RuboCop::Cop::Flexport::GlobalModelAccessFromEngine, :config do
         let(:source) do
           <<~RUBY
             Nested::GlobalModel.find(123)
-            ^^^^^^^^^^^^^^^^^^^ Direct access of global model from within Rails Engine.
+            ^^^^^^^^^^^^^^^^^^^ Direct access of global model `Nested::GlobalModel` from within Rails Engine.
           RUBY
         end
 
@@ -176,7 +176,7 @@ RSpec.describe RuboCop::Cop::Flexport::GlobalModelAccessFromEngine, :config do
           <<~RUBY
             class MyEngine::FooModel < ApplicationModel
               has_one :nested_global_model, class_name: "Nested::GlobalModel", inverse_of: :foo
-                                                        ^^^^^^^^^^^^^^^^^^^^^ Direct access of global model from within Rails Engine.
+                                                        ^^^^^^^^^^^^^^^^^^^^^ Direct access of global model `Nested::GlobalModel` from within Rails Engine.
             end
           RUBY
         end
