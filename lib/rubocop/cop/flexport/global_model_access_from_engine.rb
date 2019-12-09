@@ -46,7 +46,8 @@ module RuboCop
       #   end
       #
       class GlobalModelAccessFromEngine < Cop
-        MSG = 'Direct access of global model from within Rails Engine.'
+        MSG = 'Direct access of global model `%<model>s` ' \
+              'from within Rails Engine.'
 
         def_node_matcher :rails_association_hash_args, <<-PATTERN
           (send _ {:belongs_to :has_one :has_many} sym $hash)
@@ -58,7 +59,7 @@ module RuboCop
           # The cop allows access to e.g. MyGlobalModel::MY_CONST.
           return if child_of_const?(node)
 
-          add_offense(node)
+          add_offense(node, message: message(node.source))
         end
 
         def on_send(node)
@@ -69,7 +70,7 @@ module RuboCop
             class_name = class_name_node&.value
             next unless global_model?(class_name)
 
-            add_offense(class_name_node)
+            add_offense(class_name_node, message: message(class_name))
           end
         end
 
@@ -81,6 +82,10 @@ module RuboCop
         end
 
         private
+
+        def message(model)
+          format(MSG, model: model)
+        end
 
         def global_model_names
           @global_model_names ||= calculate_global_models
