@@ -109,6 +109,7 @@ module RuboCop
       #
       class EngineApiBoundary < Cop
         include EngineApi
+        include EngineNodeContext
 
         MSG = 'Direct access of %<engine>s engine. ' \
               'Only access engine via %<engine>s::Api.'
@@ -118,16 +119,8 @@ module RuboCop
         PATTERN
 
         def on_const(node)
-          # Sometimes modules/class are declared with the same name as an
-          # engine. For example, you might have:
-          #
-          #   /engines/foo
-          #   /app/graph/types/foo
-          #
-          # We ignore instead of yielding false positive for the module
-          # declaration in the latter.
           return if in_module_or_class_declaration?(node)
-          # Similarly, you might have value objects that are named
+          # There might be value objects that are named
           # the same as engines like:
           #
           # Warehouse.new
@@ -190,16 +183,6 @@ module RuboCop
 
         def camelize_all(names)
           names.map { |n| ActiveSupport::Inflector.camelize(n) }
-        end
-
-        def in_module_or_class_declaration?(node)
-          depth = 0
-          max_depth = 10
-          while node.const_type? && depth < max_depth
-            node = node.parent
-            depth += 1
-          end
-          node.module_type? || node.class_type?
         end
 
         def sending_method_to_namespace_itself?(node)

@@ -31,6 +31,25 @@ RSpec.describe RuboCop::Cop::Flexport::GlobalModelAccessFromEngine, :config do
   end
 
   context 'no violation' do
+    describe 'many nested modules' do
+      let(:source) do
+        <<~RUBY
+          module MyEngine
+            module Errors
+              module SomeGlobalModel
+                class SomeClientError
+                end
+              end
+            end
+          end
+        RUBY
+      end
+
+      it 'does not add any offenses' do
+        expect_no_offenses(source, engine_file)
+      end
+    end
+
     describe 'disabled engine' do
       let(:disabled_engine_file) do
         '/root/engines/fake_disabled_engine/app/file.rb'

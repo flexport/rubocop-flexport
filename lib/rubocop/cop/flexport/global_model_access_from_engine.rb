@@ -46,6 +46,8 @@ module RuboCop
       #   end
       #
       class GlobalModelAccessFromEngine < Cop
+        include EngineNodeContext
+
         MSG = 'Direct access of global model `%<model>s` ' \
               'from within Rails Engine.'
 
@@ -58,6 +60,7 @@ module RuboCop
           return unless global_model_const?(node)
           # The cop allows access to e.g. MyGlobalModel::MY_CONST.
           return if child_of_const?(node)
+          return if in_module_or_class_declaration?(node)
 
           add_offense(node, message: message(node.source))
         end
