@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require 'active_support/inflector'
-require 'digest/sha1'
-
 module RuboCop
   module Cop
     # Helpers for determining the context of a node for engine violations.
