@@ -285,17 +285,17 @@ module RuboCop
 
           raw_overrides.each do |raw_override|
             engine = ActiveSupport::Inflector.camelize(raw_override['Engine'])
-            overrides_by_engine[engine] = raw_override['AllowedModels']
+            overrides_by_engine[engine] = raw_override['AllowedModules']
           end
           overrides_by_engine
         end
 
         def engine_specific_override?(node)
-          model_name = node.parent.source
-          model_names_allowed_by_override = overrides_by_engine[current_engine]
-          return false unless model_names_allowed_by_override
+          module_name = node.parent.source
+          module_names_allowed_by_override = overrides_by_engine[current_engine]
+          return false unless module_names_allowed_by_override
 
-          model_names_allowed_by_override.include?(model_name)
+          module_names_allowed_by_override.include?(module_name)
         end
       end
     end
