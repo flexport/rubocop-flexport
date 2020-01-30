@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+# rubocop:disable Metrics/ClassLength
 module RuboCop
   module Cop
     module Flexport
@@ -80,6 +81,36 @@ module RuboCop
       # end
       # ```
       #
+      # # "StronglyProtectedEngines" parameter
+      #
+      # The Engine API is not actually a network API surface. Method invocations
+      # may happen synchronously and assume they are part of the same
+      # transaction. So if your engine is using modules whitelisted by
+      # other engines, then you cannot extract your engine code into a
+      # separate network-isolated service (even though within a big Rails
+      # monolith using engines the cross-engine method call might have been
+      # acceptable).
+      #
+      # The "StronglyProtectedEngines" parameter helps in the case you want to
+      # extract your engine completely. If your engine is listed as a strongly
+      # protected engine, then the following additional restricts apply:
+      #
+      # (1) Any use of your engine's code by code outside your engine is
+      #     considered a violation, regardless of *your* _legacy_dependents.rb,
+      #     _whitelist.rb, or engine API module. (no inbound access)
+      # (2) Any use of other engines' code within your engine is considered
+      #     a violation, regardless of *their* _legacy_dependents.rb,
+      #     _whitelist.rb, or engine API module. (no outbound access)
+      #
+      # (Note: "EngineSpecificOverrides" parameter still has effect.)
+      #
+      # # "EngineSpecificOverrides" parameter
+      #
+      # This parameter allows defining bi-lateral private "APIs" between
+      # engines. See example in global_model_access_from_engine_spec.rb.
+      # This may be useful if you plan to extract several engines into the
+      # same network-isolated service.
+      #
       # @example
       #
       #   # bad
@@ -113,6 +144,15 @@ module RuboCop
         MSG = 'Direct access of %<engine>s engine. ' \
               'Only access engine via %<engine>s::Api.'
 
+        STRONGLY_PROTECTED_MSG = 'All direct access of ' \
+              '%<engine>s engine disallowed because ' \
+              'it is in StronglyProtectedEngines list.'
+
+        STRONGLY_PROTECTED_CURRENT_MSG = 'Direct ' \
+              'access of other engines is disallowed in this file because ' \
+              'it\'s in the %<engine>s engine, which ' \
+              'is in the StronglyProtectedEngines list.'
+
         def_node_matcher :rails_association_hash_args, <<-PATTERN
           (send _ {:belongs_to :has_one :has_many} sym $hash)
         PATTERN
@@ -139,7 +179,7 @@ module RuboCop
           return unless engine
           return if valid_engine_access?(node, engine)
 
-          add_offense(node, message: format(MSG, engine: engine))
+          add_offense(node, message: message(node, engine))
         end
 
         def on_send(node)
@@ -151,7 +191,7 @@ module RuboCop
             next if engine.nil?
             next if valid_engine_access?(node, engine)
 
-            add_offense(class_name_node, message: format(MSG, engine: engine))
+            add_offense(class_name_node, message: message(node, engine))
           end
         end
 
@@ -160,6 +200,16 @@ module RuboCop
         end
 
         private
+
+        def message(_node, engine)
+          if strongly_protected_engine?(engine)
+            format(STRONGLY_PROTECTED_MSG, engine: engine)
+          elsif strongly_protected_engine?(current_engine)
+            format(STRONGLY_PROTECTED_CURRENT_MSG, engine: current_engine)
+          else
+            format(MSG, engine: engine)
+          end
+        end
 
         def extract_engine(node)
           return nil unless protected_engines.include?(node.const_name)
@@ -207,12 +257,20 @@ module RuboCop
         end
 
         def valid_engine_access?(node, engine)
+          return true if in_engine_file?(engine)
+          return true if engine_specific_override?(node)
+
+          return false if strongly_protected_engine?(current_engine)
+          return false if strongly_protected_engine?(engine)
+
+          valid_engine_api_access?(node, engine)
+        end
+
+        def valid_engine_api_access?(node, engine)
           (
-            in_engine_file?(engine) ||
             in_legacy_dependent_file?(engine) ||
             through_api?(node) ||
-            whitelisted?(node, engine) ||
-            engine_specific_override?(node)
+            whitelisted?(node, engine)
           )
         end
 
@@ -314,7 +372,19 @@ module RuboCop
 
           model_names_allowed_by_override.include?(model_name)
         end
+
+        def strongly_protected_engines
+          @strongly_protected_engines ||= begin
+            strongly_protected = cop_config['StronglyProtectedEngines'] || []
+            camelize_all(strongly_protected)
+          end
+        end
+
+        def strongly_protected_engine?(engine)
+          strongly_protected_engines.include?(engine)
+        end
       end
     end
   end
 end
+# rubocop:enable Metrics/ClassLength
