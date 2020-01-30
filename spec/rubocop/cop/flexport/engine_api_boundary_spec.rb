@@ -727,7 +727,7 @@ RSpec.describe RuboCop::Cop::Flexport::EngineApiBoundary do
             'EnginesPath' => 'engines',
             'EngineSpecificOverrides' => [{
               'Engine' => 'my_engine',
-              'AllowedModels' => ['OverrideEngine::AllowedModel']
+              'AllowedModules' => ['OverrideEngine::AllowedModel']
             }]
           }
         )
