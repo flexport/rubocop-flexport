@@ -4,6 +4,7 @@ Flexport/EngineApiBoundary:
   VersionAdded: '0.3.0'
   EnginesPath: 'engines/'
   UnprotectedEngines: []
+  StronglyProtectedEngines: []
   EngineSpecificOverrides: []
 
 Flexport/GlobalModelAccessFromEngine:

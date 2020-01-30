@@ -385,7 +385,7 @@ RSpec.describe RuboCop::Cop::Flexport::EngineApiBoundary do
     end
   end
 
-  context 'when whitelist defined' do
+  context 'when LegacyDependents defined' do
     let(:legacy_dependents_source) do
       <<~RUBY
         module MyEngine::Api::LegacyDependents
@@ -470,6 +470,286 @@ RSpec.describe RuboCop::Cop::Flexport::EngineApiBoundary do
           <<~RUBY
             OverrideEngine::NotAllowedDelivery.first
             ^^^^^^^^^^^^^^ Direct access of OverrideEngine engine. Only access engine via OverrideEngine::Api.
+          RUBY
+        end
+
+        it 'adds offenses' do
+          expect_offense(source, file)
+        end
+      end
+    end
+  end
+
+  context 'strongly protected engines' do
+    let(:config) do
+      RuboCop::Config.new(
+        'Flexport/EngineApiBoundary' => {
+          'StronglyProtectedEngines' => ['MyEngine'],
+          'EnginesPath' => 'engines'
+        }
+      )
+    end
+
+    context 'outbound access' do
+      context 'when other engine has API' do
+        let(:file) do
+          '/root/engines/my_engine/app/services/my_engine/my_service.rb'
+        end
+
+        context 'when other engine api' do
+          let(:source) do
+            <<~RUBY
+              class MyEngine
+                def foo
+                  OtherEngine::Api::ApiModule.bar
+                  ^^^^^^^^^^^ Direct access of other engines is disallowed in this file because it's in the MyEngine engine, which is in the StronglyProtectedEngines list.
+                end
+              end
+            RUBY
+          end
+
+          it 'adds offense' do
+            expect_offense(source, file)
+          end
+        end
+      end
+
+      context 'when other engine has whitelist' do
+        let(:whitelist_source) do
+          <<~RUBY
+            module OtherEngine::Api::Whitelist
+              PUBLIC_MODULES = [
+                OtherEngine::WhitelistedModule,
+              ]
+            end
+          RUBY
+        end
+        let(:file) do
+          '/root/engines/my_engine/app/services/my_engine/my_service.rb'
+        end
+        let(:api_path) { 'engines/other_engine/app/api/other_engine/api/' }
+        let(:whitelist_file) { api_path + '_whitelist.rb' }
+
+        before do
+          allow(File).to(
+            receive(:file?)
+              .with(whitelist_file)
+              .and_return(true)
+          )
+          allow(File).to(
+            receive(:read)
+              .with(whitelist_file)
+              .and_return(whitelist_source)
+          )
+        end
+
+        context 'when whitelisted public service' do
+          let(:source) do
+            <<~RUBY
+              class MyEngine
+                def foo
+                  OtherEngine::WhitelistedModule.bar
+                  ^^^^^^^^^^^ Direct access of other engines is disallowed in this file because it's in the MyEngine engine, which is in the StronglyProtectedEngines list.
+                end
+              end
+            RUBY
+          end
+
+          it 'adds offense' do
+            expect_offense(source, file)
+          end
+        end
+      end
+
+      context 'when other engine has legacy_dependents' do
+        let(:legacy_dependents_source) do
+          <<~RUBY
+            module OtherEngine::Api::LegacyDependents
+              FILES_WITH_DIRECT_ACCESS = [
+                'engines/my_engine/app/services/my_engine/my_service.rb',
+              ]
+            end
+          RUBY
+        end
+        let(:file) do
+          '/root/engines/my_engine/app/services/my_engine/my_service.rb'
+        end
+        let(:api_path) { 'engines/other_engine/app/api/other_engine/api/' }
+        let(:legacy_dependents_file) { api_path + '_legacy_dependents.rb' }
+
+        before do
+          allow(File).to(
+            receive(:file?)
+              .with(legacy_dependents_file)
+              .and_return(true)
+          )
+          allow(File).to(
+            receive(:read)
+              .with(legacy_dependents_file)
+              .and_return(legacy_dependents_source)
+          )
+        end
+
+        context 'when legacy dependent' do
+          let(:source) do
+            <<~RUBY
+              class MyEngine
+                def foo
+                  OtherEngine::WhitelistedModule.bar
+                  ^^^^^^^^^^^ Direct access of other engines is disallowed in this file because it's in the MyEngine engine, which is in the StronglyProtectedEngines list.
+                end
+              end
+            RUBY
+          end
+
+          it 'adds offense' do
+            expect_offense(source, file)
+          end
+        end
+      end
+    end
+
+    context 'inbound access' do
+      context 'when whitelist defined' do
+        let(:whitelist_source) do
+          <<~RUBY
+            module MyEngine::Api::Whitelist
+              PUBLIC_MODULES = [
+                MyEngine::WhitelistedModule,
+              ]
+            end
+          RUBY
+        end
+
+        before do
+          allow(File).to(
+            receive(:file?)
+              .with(whitelist_file)
+              .and_return(true)
+          )
+          allow(File).to(
+            receive(:read)
+              .with(whitelist_file)
+              .and_return(whitelist_source)
+          )
+        end
+
+        context 'when whitelisted public service' do
+          let(:source) do
+            <<~RUBY
+              class Controller < ApplicationController
+                def foo
+                  MyEngine::WhitelistedModule.bar
+                  ^^^^^^^^ All direct access of MyEngine engine disallowed because it is in StronglyProtectedEngines list.
+                end
+              end
+            RUBY
+          end
+
+          it 'adds offense' do
+            expect_offense(source)
+          end
+        end
+      end
+
+      context 'when whitelisted public constant' do
+        let(:source) do
+          <<~RUBY
+            class Controller < ApplicationController
+              def foo
+                MyEngine::WhitelistedModule::CRUX
+                ^^^^^^^^ All direct access of MyEngine engine disallowed because it is in StronglyProtectedEngines list.
+              end
+            end
+          RUBY
+        end
+
+        it 'adds offense' do
+          expect_offense(source)
+        end
+      end
+
+      context 'when legacy dependents defined' do
+        let(:legacy_dependents_source) do
+          <<~RUBY
+            module MyEngine::Api::LegacyDependents
+              FILES_WITH_DIRECT_ACCESS = [
+                "app/models/some_old_legacy_model.rb",
+                "engines/other_engine/app/services/other_engine/other_service.rb",
+              ]
+            end
+          RUBY
+        end
+
+        before do
+          allow(File).to(
+            receive(:file?)
+              .with(legacy_dependents_file)
+              .and_return(true)
+          )
+          allow(File).to(
+            receive(:read)
+              .with(legacy_dependents_file)
+              .and_return(legacy_dependents_source)
+          )
+        end
+
+        context 'when in legacy dependent file' do
+          let(:file) { '/root/app/models/some_old_legacy_model.rb' }
+          let(:source) do
+            <<~RUBY
+              class Controller < ApplicationController
+                def foo
+                  MyEngine::SomethingPrivateFoo.bar
+                  ^^^^^^^^ All direct access of MyEngine engine disallowed because it is in StronglyProtectedEngines list.
+                end
+              end
+            RUBY
+          end
+
+          it 'adds offenses' do
+            expect_offense(source, file)
+          end
+        end
+      end
+    end
+
+    context 'when EngineSpecificOverrides defined' do
+      let(:file) do
+        '/root/engines/my_engine/app/controllers/my_engine/foo_controller.rb'
+      end
+
+      let(:config) do
+        RuboCop::Config.new(
+          'Flexport/EngineApiBoundary' => {
+            'StronglyProtectedEngines' => ['OverrideEngine'],
+            'UnprotectedEngines' => ['FooIgnoredEngine'],
+            'EnginesPath' => 'engines',
+            'EngineSpecificOverrides' => [{
+              'Engine' => 'my_engine',
+              'AllowedModels' => ['OverrideEngine::AllowedModel']
+            }]
+          }
+        )
+      end
+
+      context 'when allowed model' do
+        let(:source) do
+          <<~RUBY
+            OverrideEngine::AllowedModel.first
+          RUBY
+        end
+
+        it 'does not add any offenses' do
+          expect_no_offenses(source, file)
+        end
+      end
+
+      context 'when not allowed model' do
+        let(:source) do
+          <<~RUBY
+            OverrideEngine::NotAllowedDelivery.first
+            ^^^^^^^^^^^^^^ All direct access of OverrideEngine engine disallowed because it is in StronglyProtectedEngines list.
           RUBY
         end
 
