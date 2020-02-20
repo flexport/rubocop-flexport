@@ -142,17 +142,19 @@ module RuboCop
         include EngineApi
         include EngineNodeContext
 
-        MSG = 'Direct access of %<engine>s engine. ' \
-              'Only access engine via %<engine>s::Api.'
+        MSG = 'Direct access of %<accessed_engine>s engine. ' \
+              'Only access engine via %<accessed_engine>s::Api.'
 
         STRONGLY_PROTECTED_MSG = 'All direct access of ' \
-              '%<engine>s engine disallowed because ' \
+              '%<accessed_engine>s engine disallowed because ' \
               'it is in StronglyProtectedEngines list.'
 
         STRONGLY_PROTECTED_CURRENT_MSG = 'Direct ' \
-              'access of other engines is disallowed in this file because ' \
-              'it\'s in the %<engine>s engine, which ' \
+              'access of %<accessed_engine>s is disallowed in this file ' \
+              'because it\'s in the %<current_engine>s engine, which ' \
               'is in the StronglyProtectedEngines list.'
+
+        MAIN_APP_NAME = 'MainApp::EngineApi'
 
         def_node_matcher :rails_association_hash_args, <<-PATTERN
           (send _ {:belongs_to :has_one :has_many} sym $hash)
@@ -168,11 +170,11 @@ module RuboCop
           # We don't want to warn on these cases either.
           return if sending_method_to_namespace_itself?(node)
 
-          engine = extract_engine(node)
-          return unless engine
-          return if valid_engine_access?(node, engine)
+          accessed_engine = extract_accessed_engine(node)
+          return unless accessed_engine
+          return if valid_engine_access?(node, accessed_engine)
 
-          add_offense(node, message: message(node, engine))
+          add_offense(node, message: message(accessed_engine))
         end
 
         def on_send(node)
@@ -180,11 +182,11 @@ module RuboCop
             class_name_node = extract_class_name_node(assocation_hash_args)
             next if class_name_node.nil?
 
-            engine = extract_model_engine(class_name_node)
-            next if engine.nil?
-            next if valid_engine_access?(node, engine)
+            accessed_engine = extract_model_engine(class_name_node)
+            next if accessed_engine.nil?
+            next if valid_engine_access?(node, accessed_engine)
 
-            add_offense(class_name_node, message: message(node, engine))
+            add_offense(class_name_node, message: message(accessed_engine))
           end
         end
 
@@ -194,20 +196,33 @@ module RuboCop
 
         private
 
-        def message(_node, engine)
-          if strongly_protected_engine?(engine)
-            format(STRONGLY_PROTECTED_MSG, engine: engine)
+        def message(accessed_engine)
+          if strongly_protected_engine?(accessed_engine)
+            format(STRONGLY_PROTECTED_MSG, accessed_engine: accessed_engine)
           elsif strongly_protected_engine?(current_engine)
-            format(STRONGLY_PROTECTED_CURRENT_MSG, engine: current_engine)
+            format(
+              STRONGLY_PROTECTED_CURRENT_MSG,
+              accessed_engine: accessed_engine,
+              current_engine: current_engine
+            )
           else
-            format(MSG, engine: engine)
+            format(MSG, accessed_engine: accessed_engine)
           end
         end
 
-        def extract_engine(node)
+        def extract_accessed_engine(node)
+          return MAIN_APP_NAME if disallowed_main_app_access?(node)
           return nil unless protected_engines.include?(node.const_name)
 
           node.const_name
+        end
+
+        def disallowed_main_app_access?(node)
+          strongly_protected_engine?(current_engine) && main_app_access?(node)
+        end
+
+        def main_app_access?(node)
+          node.const_name.start_with?(MAIN_APP_NAME)
         end
 
         def engines_path
@@ -239,21 +254,21 @@ module RuboCop
           node.parent.send_type?
         end
 
-        def valid_engine_access?(node, engine)
-          return true if in_engine_file?(engine)
+        def valid_engine_access?(node, accessed_engine)
+          return true if in_engine_file?(accessed_engine)
           return true if engine_specific_override?(node)
 
           return false if strongly_protected_engine?(current_engine)
-          return false if strongly_protected_engine?(engine)
+          return false if strongly_protected_engine?(accessed_engine)
 
-          valid_engine_api_access?(node, engine)
+          valid_engine_api_access?(node, accessed_engine)
         end
 
-        def valid_engine_api_access?(node, engine)
+        def valid_engine_api_access?(node, accessed_engine)
           (
-            in_legacy_dependent_file?(engine) ||
+            in_legacy_dependent_file?(accessed_engine) ||
             through_api?(node) ||
-            whitelisted?(node, engine)
+            whitelisted?(node, accessed_engine)
           )
         end
 
@@ -291,12 +306,12 @@ module RuboCop
           end
         end
 
-        def in_engine_file?(engine)
-          current_engine == engine
+        def in_engine_file?(accessed_engine)
+          current_engine == accessed_engine
         end
 
-        def in_legacy_dependent_file?(engine)
-          legacy_dependents = read_api_file(engine, :legacy_dependents)
+        def in_legacy_dependent_file?(accessed_engine)
+          legacy_dependents = read_api_file(accessed_engine, :legacy_dependents)
           # The file names are strings so we need to remove the escaped quotes
           # on either side from the source code.
           legacy_dependents = legacy_dependents.map do |source|
