@@ -149,6 +149,25 @@ RSpec.describe RuboCop::Cop::Flexport::EngineApiBoundary do
     end
   end
 
+  context 'when main app API and not StronglyProtectedEngine' do
+    let(:file) do
+      '/root/engines/my_engine/app/services/my_engine/my_service.rb'
+    end
+    let(:source) do
+      <<~RUBY
+        class MyEngine
+          def foo
+            MainApp::EngineApi::ApiModule.bar
+          end
+        end
+      RUBY
+    end
+
+    it 'adds offense' do
+      expect_no_offenses(source, file)
+    end
+  end
+
   context 'when unprotected engine' do
     let(:source) do
       <<~RUBY
@@ -491,18 +510,34 @@ RSpec.describe RuboCop::Cop::Flexport::EngineApiBoundary do
     end
 
     context 'outbound access' do
-      context 'when other engine has API' do
-        let(:file) do
-          '/root/engines/my_engine/app/services/my_engine/my_service.rb'
+      let(:file) do
+        '/root/engines/my_engine/app/services/my_engine/my_service.rb'
+      end
+      context 'when main app API' do
+        let(:source) do
+          <<~RUBY
+            class MyEngine
+              def foo
+                MainApp::EngineApi::ApiModule.bar
+                ^^^^^^^^^^^^^^^^^^ Direct access of MainApp::EngineApi is disallowed in this file because it's in the MyEngine engine, which is in the StronglyProtectedEngines list.
+              end
+            end
+          RUBY
         end
 
+        it 'adds offense' do
+          expect_offense(source, file)
+        end
+      end
+
+      context 'when other engine has API' do
         context 'when other engine api' do
           let(:source) do
             <<~RUBY
               class MyEngine
                 def foo
                   OtherEngine::Api::ApiModule.bar
-                  ^^^^^^^^^^^ Direct access of other engines is disallowed in this file because it's in the MyEngine engine, which is in the StronglyProtectedEngines list.
+                  ^^^^^^^^^^^ Direct access of OtherEngine is disallowed in this file because it's in the MyEngine engine, which is in the StronglyProtectedEngines list.
                 end
               end
             RUBY
@@ -549,7 +584,7 @@ RSpec.describe RuboCop::Cop::Flexport::EngineApiBoundary do
               class MyEngine
                 def foo
                   OtherEngine::WhitelistedModule.bar
-                  ^^^^^^^^^^^ Direct access of other engines is disallowed in this file because it's in the MyEngine engine, which is in the StronglyProtectedEngines list.
+                  ^^^^^^^^^^^ Direct access of OtherEngine is disallowed in this file because it's in the MyEngine engine, which is in the StronglyProtectedEngines list.
                 end
               end
             RUBY
@@ -596,7 +631,7 @@ RSpec.describe RuboCop::Cop::Flexport::EngineApiBoundary do
               class MyEngine
                 def foo
                   OtherEngine::WhitelistedModule.bar
-                  ^^^^^^^^^^^ Direct access of other engines is disallowed in this file because it's in the MyEngine engine, which is in the StronglyProtectedEngines list.
+                  ^^^^^^^^^^^ Direct access of OtherEngine is disallowed in this file because it's in the MyEngine engine, which is in the StronglyProtectedEngines list.
                 end
               end
             RUBY
