@@ -251,7 +251,7 @@ module RuboCop
         end
 
         def sending_method_to_namespace_itself?(node)
-          node.parent.send_type?
+          node.parent&.send_type?
         end
 
         def valid_engine_access?(node, accessed_engine)
@@ -364,11 +364,22 @@ module RuboCop
         end
 
         def engine_specific_override?(node)
-          module_name = node.parent.source
-          module_names_allowed_by_override = overrides_by_engine[current_engine]
-          return false unless module_names_allowed_by_override
+          return false unless overrides_for_current_engine
 
-          module_names_allowed_by_override.include?(module_name)
+          depth = 0
+          max_depth = 5
+          while node&.const_type? && depth < max_depth
+            module_name = node.source
+            return true if overrides_for_current_engine.include?(module_name)
+
+            node = node.parent
+            depth += 1
+          end
+          false
+        end
+
+        def overrides_for_current_engine
+          overrides_by_engine[current_engine]
         end
 
         def strongly_protected_engines

@@ -768,7 +768,7 @@ RSpec.describe RuboCop::Cop::Flexport::EngineApiBoundary do
         )
       end
 
-      context 'when allowed model' do
+      context 'when allowed module' do
         let(:source) do
           <<~RUBY
             OverrideEngine::AllowedModel.first
@@ -780,10 +780,197 @@ RSpec.describe RuboCop::Cop::Flexport::EngineApiBoundary do
         end
       end
 
-      context 'when not allowed model' do
+      context 'when not allowed module' do
         let(:source) do
           <<~RUBY
             OverrideEngine::NotAllowedDelivery.first
+            ^^^^^^^^^^^^^^ All direct access of OverrideEngine engine disallowed because it is in StronglyProtectedEngines list.
+          RUBY
+        end
+
+        it 'adds offenses' do
+          expect_offense(source, file)
+        end
+      end
+    end
+
+    context 'when EngineSpecificOverrides for entire top-level module' do
+      let(:file) do
+        '/root/engines/my_engine/app/controllers/my_engine/foo_controller.rb'
+      end
+
+      let(:config) do
+        RuboCop::Config.new(
+          'Flexport/EngineApiBoundary' => {
+            'StronglyProtectedEngines' => ['OverrideEngine'],
+            'UnprotectedEngines' => ['FooIgnoredEngine'],
+            'EnginesPath' => 'engines',
+            'EngineSpecificOverrides' => [{
+              'Engine' => 'my_engine',
+              'AllowedModules' => ['OverrideEngine']
+            }]
+          }
+        )
+      end
+
+      context 'when allowed module' do
+        let(:source) do
+          <<~RUBY
+            OverrideEngine::Constants::Foo::BAR
+            OverrideEngine::Constants::Foo::BAZ
+            OverrideEngine.new
+            OverrideEngine::FooBatBar
+            OverrideEngine::FooBatBar.new
+            OverrideEngine::FooBatBar::BAZAP
+          RUBY
+        end
+
+        it 'does not add any offenses' do
+          expect_no_offenses(source, file)
+        end
+      end
+
+      context 'when not allowed module' do
+        let(:source) do
+          <<~RUBY
+            OtherEngine::Constants::Foo::BAR
+            ^^^^^^^^^^^ Direct access of OtherEngine engine. Only access engine via OtherEngine::Api.
+          RUBY
+        end
+
+        it 'adds offenses' do
+          expect_offense(source, file)
+        end
+      end
+    end
+
+    context 'when EngineSpecificOverrides defined with constant' do
+      let(:file) do
+        '/root/engines/my_engine/app/controllers/my_engine/foo_controller.rb'
+      end
+
+      let(:config) do
+        RuboCop::Config.new(
+          'Flexport/EngineApiBoundary' => {
+            'StronglyProtectedEngines' => ['OverrideEngine'],
+            'UnprotectedEngines' => ['FooIgnoredEngine'],
+            'EnginesPath' => 'engines',
+            'EngineSpecificOverrides' => [{
+              'Engine' => 'my_engine',
+              'AllowedModules' => ['OverrideEngine::Constants::Foo']
+            }]
+          }
+        )
+      end
+
+      context 'when allowed module' do
+        let(:source) do
+          <<~RUBY
+            OverrideEngine::Constants::Foo::BAR
+            OverrideEngine::Constants::Foo::BAZ
+            OverrideEngine::Constants::Foo
+          RUBY
+        end
+
+        it 'does not add any offenses' do
+          expect_no_offenses(source, file)
+        end
+      end
+
+      context 'when not allowed module' do
+        let(:source) do
+          <<~RUBY
+            OverrideEngine::Constants::NotFoo::BAR
+            ^^^^^^^^^^^^^^ All direct access of OverrideEngine engine disallowed because it is in StronglyProtectedEngines list.
+          RUBY
+        end
+
+        it 'adds offenses' do
+          expect_offense(source, file)
+        end
+      end
+    end
+
+    context 'when EngineSpecificOverrides defined with specific constant' do
+      let(:file) do
+        '/root/engines/my_engine/app/controllers/my_engine/foo_controller.rb'
+      end
+
+      let(:config) do
+        RuboCop::Config.new(
+          'Flexport/EngineApiBoundary' => {
+            'StronglyProtectedEngines' => ['OverrideEngine'],
+            'UnprotectedEngines' => ['FooIgnoredEngine'],
+            'EnginesPath' => 'engines',
+            'EngineSpecificOverrides' => [{
+              'Engine' => 'my_engine',
+              'AllowedModules' => ['OverrideEngine::Constants::Foo::BAR']
+            }]
+          }
+        )
+      end
+
+      context 'when allowed module' do
+        let(:source) do
+          <<~RUBY
+            OverrideEngine::Constants::Foo::BAR
+          RUBY
+        end
+
+        it 'does not add any offenses' do
+          expect_no_offenses(source, file)
+        end
+      end
+
+      context 'when not allowed module' do
+        let(:source) do
+          <<~RUBY
+            OverrideEngine::Constants::Foo::BAZ
+            ^^^^^^^^^^^^^^ All direct access of OverrideEngine engine disallowed because it is in StronglyProtectedEngines list.
+          RUBY
+        end
+
+        it 'adds offenses' do
+          expect_offense(source, file)
+        end
+      end
+    end
+
+    context 'when EngineSpecificOverrides defined at class level with new' do
+      let(:file) do
+        '/root/engines/my_engine/app/controllers/my_engine/foo_controller.rb'
+      end
+
+      let(:config) do
+        RuboCop::Config.new(
+          'Flexport/EngineApiBoundary' => {
+            'StronglyProtectedEngines' => ['OverrideEngine'],
+            'UnprotectedEngines' => ['FooIgnoredEngine'],
+            'EnginesPath' => 'engines',
+            'EngineSpecificOverrides' => [{
+              'Engine' => 'my_engine',
+              'AllowedModules' => ['OverrideEngine::SomeOtherModule::Foo']
+            }]
+          }
+        )
+      end
+
+      context 'when allowed module' do
+        let(:source) do
+          <<~RUBY
+            OverrideEngine::SomeOtherModule::Foo.new
+          RUBY
+        end
+
+        it 'does not add any offenses' do
+          expect_no_offenses(source, file)
+        end
+      end
+
+      context 'when not allowed module' do
+        let(:source) do
+          <<~RUBY
+            OverrideEngine::SomeOtherModule::NotFoo.new
             ^^^^^^^^^^^^^^ All direct access of OverrideEngine engine disallowed because it is in StronglyProtectedEngines list.
           RUBY
         end
