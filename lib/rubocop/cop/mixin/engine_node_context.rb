@@ -15,7 +15,7 @@ module RuboCop
       def in_module_or_class_declaration?(node)
         depth = 0
         max_depth = 10
-        while node.const_type? && depth < max_depth
+        while node.const_type? && node.parent && depth < max_depth
           node = node.parent
           depth += 1
         end
