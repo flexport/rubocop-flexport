@@ -127,7 +127,7 @@ module RuboCop
 
         def in_disabled_engine?(file_path)
           disabled_engines.any? do |e|
-            file_path.include?(File.join(engines_path, e))
+            file_path.include?(File.join(engines_path, e, ''))
           end
         end
 

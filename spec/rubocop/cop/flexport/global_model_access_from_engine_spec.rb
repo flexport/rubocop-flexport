@@ -159,6 +159,16 @@ RSpec.describe RuboCop::Cop::Flexport::GlobalModelAccessFromEngine, :config do
       it 'adds an offense' do
         expect_offense(source, engine_file)
       end
+
+      context "an engine's name has a prefix that matches a disabled engine" do
+        let(:engine_file) do
+          '/root/engines/fake_disabled_engine_foo/app/file.rb'
+        end
+
+        it 'adds an offense' do
+          expect_offense(source, engine_file)
+        end
+      end
     end
 
     describe 'association to global model' do
