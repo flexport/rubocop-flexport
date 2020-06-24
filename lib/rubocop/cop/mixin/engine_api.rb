@@ -10,9 +10,13 @@ module RuboCop
       extend NodePattern::Macros
 
       API_FILE_DETAILS = {
+        allowlist: {
+          file_basename: '_allowlist.rb',
+          array_matcher: :allowlist_array
+        },
         whitelist: {
           file_basename: '_whitelist.rb',
-          array_matcher: :whitelist_array
+          array_matcher: :allowlist_array
         },
         legacy_dependents: {
           file_basename: '_legacy_dependents.rb',
@@ -108,7 +112,7 @@ module RuboCop
         end
       end
 
-      def_node_matcher :whitelist_array, <<-PATTERN
+      def_node_matcher :allowlist_array, <<-PATTERN
           (casgn nil? {:PUBLIC_MODULES :PUBLIC_SERVICES :PUBLIC_CONSTANTS :PUBLIC_TYPES} {$array (send $array ...)})
       PATTERN
 

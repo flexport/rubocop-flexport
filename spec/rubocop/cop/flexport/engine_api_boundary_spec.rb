@@ -22,6 +22,7 @@ RSpec.describe RuboCop::Cop::Flexport::EngineApiBoundary do
   let(:api_path) { 'engines/my_engine/app/api/my_engine/api/' }
   let(:legacy_dependents_file) { api_path + '_legacy_dependents.rb' }
   let(:whitelist_file) { api_path + '_whitelist.rb' }
+  let(:allowlist_file) { api_path + '_allowlist.rb' }
 
   before do
     allow(File).to receive(:file?).and_call_original
@@ -41,6 +42,9 @@ RSpec.describe RuboCop::Cop::Flexport::EngineApiBoundary do
     )
     allow(File).to(
       receive(:file?).with(/_whitelist/).and_return(false)
+    )
+    allow(File).to(
+      receive(:file?).with(/_allowlist/).and_return(false)
     )
   end
 
@@ -311,6 +315,95 @@ RSpec.describe RuboCop::Cop::Flexport::EngineApiBoundary do
 
       it 'adds an offense' do
         expect_offense(source)
+      end
+    end
+  end
+
+  context 'when allowlist defined' do
+    let(:allowlist_source) do
+      <<~RUBY
+        module MyEngine::Api::Allowlist
+          PUBLIC_MODULES = [
+            MyEngine::AllowlistedModule,
+          ]
+        end
+      RUBY
+    end
+
+    before do
+      allow(File).to(
+        receive(:file?)
+          .with(allowlist_file)
+          .and_return(true)
+      )
+      allow(File).to(
+        receive(:read)
+          .with(allowlist_file)
+          .and_return(allowlist_source)
+      )
+    end
+
+    context 'when allowlisted public service' do
+      let(:source) do
+        <<~RUBY
+          class Controller < ApplicationController
+            def foo
+              MyEngine::AllowlistedModule.bar
+            end
+          end
+        RUBY
+      end
+
+      it 'does not add any offenses' do
+        expect_no_offenses(source)
+      end
+    end
+
+    context 'when allowlisted public constant' do
+      let(:source) do
+        <<~RUBY
+          class Controller < ApplicationController
+            def foo
+              MyEngine::AllowlistedModule::CRUX
+            end
+          end
+        RUBY
+      end
+
+      it 'does not add any offenses' do
+        expect_no_offenses(source)
+      end
+    end
+
+    context 'when allowlisted method accessed with leading :: and expect' do
+      let(:source) do
+        <<~RUBY
+          expect(::MyEngine::AllowlistedModule).to_not receive(:foo)
+        RUBY
+      end
+
+      it 'does not add any offenses' do
+        expect_no_offenses(source)
+      end
+    end
+
+    context 'when allowlisted public constant in array' do
+      let(:source) do
+        <<~RUBY
+          class Controller < ApplicationController
+            def foo
+              if [
+                MyEngine::AllowlistedModule::NOT_MANIFESTED,
+              ]
+                1
+              end
+            end
+          end
+        RUBY
+      end
+
+      it 'does not add any offenses' do
+        expect_no_offenses(source)
       end
     end
   end
