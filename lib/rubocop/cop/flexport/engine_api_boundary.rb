@@ -328,9 +328,7 @@ module RuboCop
 
         def allowlisted?(node, engine)
           allowlist = read_api_file(engine, :allowlist)
-          if allowlist.empty?
-            allowlist = read_api_file(engine, :whitelist)
-          end
+          allowlist = read_api_file(engine, :whitelist) if allowlist.empty?
           return false if allowlist.empty?
 
           depth = 0
