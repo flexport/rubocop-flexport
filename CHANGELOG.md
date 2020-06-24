@@ -2,6 +2,10 @@
 
 ## master (unreleased)
 
+## 0.9.0
+
+- Add support for `_allowlist.rb`, in addition to `_whitelist.rb`.
+
 ## 0.8.0
 
 - Bug fix related to disabling engines with similar names.
