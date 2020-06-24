@@ -17,7 +17,7 @@ module RuboCop
       #   will be accessible outside your engine. For example, adding
       #   `api/foo_service.rb` will allow code outside your engine to
       #   invoke eg `MyEngine::Api::FooService.bar(baz)`.
-      # - Create an `allowlist.rb` or `_whitelist.rb` file in `api/`. Modules listed in
+      # - Create an `_allowlist.rb` or `_whitelist.rb` file in `api/`. Modules listed in
       #   this file are accessible to code outside the engine. The file
       #   must have this name and a particular format (see below).
       #
@@ -268,7 +268,6 @@ module RuboCop
           (
             in_legacy_dependent_file?(accessed_engine) ||
             through_api?(node) ||
-            whitelisted?(node, accessed_engine) ||
             allowlisted?(node, accessed_engine)
           )
         end
@@ -329,6 +328,9 @@ module RuboCop
 
         def allowlisted?(node, engine)
           allowlist = read_api_file(engine, :allowlist)
+          if allowlist.empty?
+            allowlist = read_api_file(engine, :whitelist)
+          end
           return false if allowlist.empty?
 
           depth = 0
@@ -336,23 +338,6 @@ module RuboCop
           while node.const_type? && depth < max_depth
             full_const_name = remove_leading_colons(node.source)
             return true if allowlist.include?(full_const_name)
-
-            node = node.parent
-            depth += 1
-          end
-
-          false
-        end
-
-        def whitelisted?(node, engine)
-          whitelist = read_api_file(engine, :whitelist)
-          return false if whitelist.empty?
-
-          depth = 0
-          max_depth = 5
-          while node.const_type? && depth < max_depth
-            full_const_name = remove_leading_colons(node.source)
-            return true if whitelist.include?(full_const_name)
 
             node = node.parent
             depth += 1
