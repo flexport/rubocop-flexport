@@ -45,8 +45,14 @@ module RuboCop
       #     # No direct association to global models.
       #   end
       #
+      # This cop will also complain if you try to use global FactoryBot
+      # factories in your engine's specs. To disable this behavior for your
+      # engine, add it to the `AllowGlobalFactoryBotFromEngines` list in
+      # .rubocop.yml.
+      #
       class GlobalModelAccessFromEngine < Cop
         include EngineNodeContext
+        include FactoryBotMixin
 
         MSG = 'Direct access of global model `%<model>s` ' \
               'from within Rails Engine.'
@@ -75,13 +81,26 @@ module RuboCop
 
             add_offense(class_name_node, message: message(class_name))
           end
+
+          return unless should_check_for_cross_engine_factory_bot?
+
+          factory_bot(node) do |factory_node|
+            factory = factory_node.children[0]
+            next unless global_factory?(factory)
+
+            add_offense(node, message: message(factory))
+          end
         end
 
         # Because this cop's behavior depends on the state of external files,
         # we override this method to bust the RuboCop cache when those files
         # change.
         def external_dependency_checksum
-          Digest::SHA1.hexdigest(model_dir_paths.join)
+          if should_check_for_cross_engine_factory_bot?
+            Digest::SHA1.hexdigest((model_dir_paths + global_factories.sort).join)
+          else
+            Digest::SHA1.hexdigest(model_dir_paths.join)
+          end
         end
 
         private
@@ -94,8 +113,20 @@ module RuboCop
           @global_model_names ||= calculate_global_models
         end
 
+        def global_factories
+          @global_factories ||= spec_factory_paths.flat_map do |path|
+            source_code = File.read(path)
+            source = RuboCop::ProcessedSource.new(source_code, RUBY_VERSION.to_f)
+            find_factories(source.ast)
+          end
+        end
+
         def model_dir_paths
           Dir[File.join(global_models_path, '**/*.rb')]
+        end
+
+        def spec_factory_paths
+          @spec_factory_paths ||= Dir['spec/factories/**/*.rb']
         end
 
         def calculate_global_models
@@ -133,6 +164,12 @@ module RuboCop
           end
         end
 
+        def should_check_for_cross_engine_factory_bot?
+          spec_file? && allow_global_factory_bot_from_engines.none? do |engine|
+            processed_source.path.include?(File.join(engines_path, engine, ''))
+          end
+        end
+
         def global_model_const?(const_node)
           # Remove leading `::`, if any.
           class_name = const_node.source.sub(/^:*/, '')
@@ -142,6 +179,10 @@ module RuboCop
         # class_name is e.g. "FooGlobalModelNamespace::BarModel"
         def global_model?(class_name)
           global_model_names.include?(class_name)
+        end
+
+        def global_factory?(factory_name)
+          global_factories.include?(factory_name)
         end
 
         def child_of_const?(node)
@@ -163,6 +204,10 @@ module RuboCop
           raw.map do |e|
             ActiveSupport::Inflector.underscore(e)
           end
+        end
+
+        def allow_global_factory_bot_from_engines
+          cop_config['AllowGlobalFactoryBotFromEngines'] || []
         end
 
         def allowed_global_models
