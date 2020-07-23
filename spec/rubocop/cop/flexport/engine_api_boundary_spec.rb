@@ -317,6 +317,76 @@ RSpec.describe RuboCop::Cop::Flexport::EngineApiBoundary do
         expect_offense(source)
       end
     end
+
+    describe 'using spec factories' do
+      let(:file_path) { 'engines/my_engine/spec/foo_spec.rb' }
+      let(:factory_path) { 'engines/other_engine/spec/factories/port.rb' }
+      let(:factory) do
+        <<~RUBY
+          FactoryBot.define do
+            factory :port
+          end
+        RUBY
+      end
+      let(:source) do
+        <<~RUBY
+          create(:port)
+        RUBY
+      end
+
+      before do
+        allow(Dir)
+          .to receive(:[])
+          .with('engines/*/spec/factories/**/*.rb')
+          .and_return([factory_path])
+        allow(File)
+          .to receive(:read)
+          .with(factory_path)
+          .and_return(factory)
+      end
+
+      context 'when file is not a spec' do
+        let(:file_path) { 'engines/my_engine/lib/foo.rb' }
+
+        it 'does not add any offenses' do
+          expect_no_offenses(source, file_path)
+        end
+      end
+
+      context 'when factory is defined in same engine' do
+        let(:factory_path) { 'engines/my_engine/spec/factories/port.rb' }
+
+        it 'does not add any offenses' do
+          expect_no_offenses(source, file_path)
+        end
+      end
+
+      context 'when factory is defined in other engine' do
+        let(:source) do
+          <<~RUBY
+            create(:port)
+            ^^^^^^^^^^^^^ Direct access of OtherEngine engine. Only access engine via OtherEngine::Api.
+          RUBY
+        end
+
+        it 'adds an offense' do
+          expect_offense(source, file_path)
+        end
+      end
+
+      context 'when engine is in the allowed list' do
+        let(:config_params) do
+          {
+            'EnginesPath' => 'engines',
+            'AllowCrossEngineFactoryBotFromEngines' => ['my_engine']
+          }
+        end
+
+        it 'does not add any offenses' do
+          expect_no_offenses(source, file_path)
+        end
+      end
+    end
   end
 
   context 'when allowlist defined' do
