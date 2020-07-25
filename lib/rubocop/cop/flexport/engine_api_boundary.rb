@@ -191,7 +191,7 @@ module RuboCop
           end
           return unless should_check_for_cross_engine_factory_bot?
 
-          factory_bot(node) do |factory_node|
+          factory_bot_usage(node) do |factory_node|
             check_for_cross_engine_factory_bot_usage(node, factory_node)
           end
         end

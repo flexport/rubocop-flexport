@@ -19,7 +19,7 @@ module RuboCop
         create_pair
       ].freeze
 
-      def_node_matcher :factory_bot, <<~PATTERN
+      def_node_matcher :factory_bot_usage, <<~PATTERN
         (send _ {#{FACTORY_BOT_METHODS.map(&:inspect).join(' ')}} $sym)
       PATTERN
 

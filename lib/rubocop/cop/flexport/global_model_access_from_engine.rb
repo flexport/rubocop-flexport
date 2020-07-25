@@ -84,7 +84,7 @@ module RuboCop
 
           return unless should_check_for_cross_engine_factory_bot?
 
-          factory_bot(node) do |factory_node|
+          factory_bot_usage(node) do |factory_node|
             factory = factory_node.children[0]
             next unless global_factory?(factory)
 
