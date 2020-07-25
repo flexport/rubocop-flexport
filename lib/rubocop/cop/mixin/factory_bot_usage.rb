@@ -3,7 +3,7 @@
 module RuboCop
   module Cop
     # Helpers for detecting FactoryBot usage.
-    module FactoryBotMixin
+    module FactoryBotUsage
       extend NodePattern::Macros
 
       def_node_matcher :factory_bot, <<~PATTERN

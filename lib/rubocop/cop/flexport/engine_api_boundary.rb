@@ -148,7 +148,7 @@ module RuboCop
       class EngineApiBoundary < Cop
         include EngineApi
         include EngineNodeContext
-        include FactoryBotMixin
+        include FactoryBotUsage
 
         MSG = 'Direct access of %<accessed_engine>s engine. ' \
               'Only access engine via %<accessed_engine>s::Api.'

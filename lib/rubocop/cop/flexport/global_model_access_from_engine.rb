@@ -52,7 +52,7 @@ module RuboCop
       #
       class GlobalModelAccessFromEngine < Cop
         include EngineNodeContext
-        include FactoryBotMixin
+        include FactoryBotUsage
 
         MSG = 'Direct access of global model `%<model>s` ' \
               'from within Rails Engine.'
