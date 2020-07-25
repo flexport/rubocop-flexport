@@ -6,8 +6,21 @@ module RuboCop
     module FactoryBotUsage
       extend NodePattern::Macros
 
+      FACTORY_BOT_METHODS = %i[
+        attributes_for
+        attributes_for_list
+        build
+        build_list
+        build_pair
+        build_stubbed
+        build_stubbed_list
+        create
+        create_list
+        create_pair
+      ].freeze
+
       def_node_matcher :factory_bot, <<~PATTERN
-        (send _ {:build :build_list :create :create_list} $sym)
+        (send _ {#{FACTORY_BOT_METHODS.map(&:inspect).join(' ')}} $sym)
       PATTERN
 
       def spec_file?
