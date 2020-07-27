@@ -444,7 +444,7 @@ module RuboCop
           self.class.factory_engines_cache ||= spec_factory_paths.each_with_object({}) do |path, h|
             engine_name = engine_name_from_path(path)
             ast = parse_ast(path)
-            find_factories(ast).each do |factory|
+            find_factories(ast).each do |factory, _|
               h[factory] = engine_name
             end
           end

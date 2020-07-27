@@ -123,7 +123,7 @@ module RuboCop
           self.class.global_factories_cache ||= spec_factory_paths.flat_map do |path|
             source_code = File.read(path)
             source = RuboCop::ProcessedSource.new(source_code, RUBY_VERSION.to_f)
-            find_factories(source.ast)
+            find_factories(source.ast).map { |factory, _| factory }
           end
         end
 
