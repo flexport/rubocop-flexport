@@ -79,29 +79,38 @@ module RuboCop
           return unless in_enforced_engine_file?
 
           rails_association_hash_args(node) do |assocation_hash_args|
-            class_name_node = extract_class_name_node(assocation_hash_args)
-            class_name = class_name_node&.value
-            next unless global_model?(class_name)
-
-            add_offense(class_name_node, message: message(class_name))
+            check_for_rails_association_with_global_model(assocation_hash_args)
           end
 
-          return unless should_check_for_cross_engine_factory_bot?
+          return unless should_check_for_global_factory_bot?
 
           factory_bot_usage(node) do |factory_node|
-            factory = factory_node.children[0]
-            next unless global_factory?(factory)
-
-            add_offense(node, message: message(factory))
+            check_for_global_factory_bot_usage(node, factory_node)
           end
+        end
+
+        def check_for_rails_association_with_global_model(assocation_hash_args)
+          class_name_node = extract_class_name_node(assocation_hash_args)
+          class_name = class_name_node&.value
+          return unless global_model?(class_name)
+
+          add_offense(class_name_node, message: message(class_name))
+        end
+
+        def check_for_global_factory_bot_usage(node, factory_node)
+          factory = factory_node.children[0]
+          return unless global_factory?(factory)
+
+          model_class_name = global_factories[factory]
+          add_offense(node, message: message(model_class_name))
         end
 
         # Because this cop's behavior depends on the state of external files,
         # we override this method to bust the RuboCop cache when those files
         # change.
         def external_dependency_checksum
-          if should_check_for_cross_engine_factory_bot?
-            Digest::SHA1.hexdigest((model_dir_paths + global_factories.sort).join)
+          if should_check_for_global_factory_bot?
+            Digest::SHA1.hexdigest((model_dir_paths + global_factories.keys.sort).join)
           else
             Digest::SHA1.hexdigest(model_dir_paths.join)
           end
@@ -120,10 +129,12 @@ module RuboCop
         def global_factories
           # Cache factories at the class level so that we don't have to fetch
           # them again for every file we lint.
-          self.class.global_factories_cache ||= spec_factory_paths.flat_map do |path|
+          self.class.global_factories_cache ||= spec_factory_paths.each_with_object({}) do |path, h|
             source_code = File.read(path)
             source = RuboCop::ProcessedSource.new(source_code, RUBY_VERSION.to_f)
-            find_factories(source.ast).map { |factory, _| factory }
+            find_factories(source.ast).each do |factory, model_class_name|
+              h[factory] = model_class_name
+            end
           end
         end
 
@@ -170,7 +181,7 @@ module RuboCop
           end
         end
 
-        def should_check_for_cross_engine_factory_bot?
+        def should_check_for_global_factory_bot?
           spec_file? && allow_global_factory_bot_from_engines.none? do |engine|
             processed_source.path.include?(File.join(engines_path, engine, ''))
           end

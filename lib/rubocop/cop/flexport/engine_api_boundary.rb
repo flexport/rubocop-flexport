@@ -213,9 +213,11 @@ module RuboCop
 
         def check_for_cross_engine_factory_bot_usage(node, factory_node)
           factory = factory_node.children[0]
-          accessed_engine = factory_engines[factory]
+          accessed_engine, model_class_name = factory_engines[factory]
           return if accessed_engine.nil?
-          return if valid_engine_access?(node, accessed_engine)
+
+          model_class_node = parse_ast(model_class_name)
+          return if valid_engine_access?(model_class_node, accessed_engine)
 
           add_offense(node, message: message(accessed_engine))
         end
@@ -367,7 +369,7 @@ module RuboCop
 
           depth = 0
           max_depth = 5
-          while node.const_type? && depth < max_depth
+          while node&.const_type? && depth < max_depth
             full_const_name = remove_leading_colons(node.source)
             return true if allowlist.include?(full_const_name)
 
@@ -443,9 +445,9 @@ module RuboCop
           # them again for every file we lint.
           self.class.factory_engines_cache ||= spec_factory_paths.each_with_object({}) do |path, h|
             engine_name = engine_name_from_path(path)
-            ast = parse_ast(path)
-            find_factories(ast).each do |factory, _|
-              h[factory] = engine_name
+            ast = parse_ast(File.read(path))
+            find_factories(ast).each do |factory, model_class_name|
+              h[factory] = [engine_name, model_class_name]
             end
           end
         end

@@ -232,7 +232,7 @@ RSpec.describe RuboCop::Cop::Flexport::GlobalModelAccessFromEngine, :config do
           let(:source) do
             <<~RUBY
               create(:port)
-              ^^^^^^^^^^^^^ Direct access of global model `port` from within Rails Engine.
+              ^^^^^^^^^^^^^ Direct access of global model `Port` from within Rails Engine.
             RUBY
           end
 

@@ -324,7 +324,7 @@ RSpec.describe RuboCop::Cop::Flexport::EngineApiBoundary do
       let(:factory) do
         <<~RUBY
           FactoryBot.define do
-            factory :port
+            factory :port, class: ::OtherEngine::Port
           end
         RUBY
       end
@@ -378,6 +378,36 @@ RSpec.describe RuboCop::Cop::Flexport::EngineApiBoundary do
 
         it 'adds an offense' do
           expect_offense(source, file_path)
+        end
+      end
+
+      context "when model is in other engine's allowlist" do
+        let(:allowlist_source) do
+          <<~RUBY
+            module OtherEngine::Api::Allowlist
+              PUBLIC_TYPES = [
+                OtherEngine::Port,
+              ]
+            end
+          RUBY
+        end
+        let(:allowlist_file) { 'engines/other_engine/app/api/other_engine/api/_allowlist.rb' }
+
+        before do
+          allow(File).to(
+            receive(:file?)
+              .with(allowlist_file)
+              .and_return(true)
+          )
+          allow(File).to(
+            receive(:read)
+              .with(allowlist_file)
+              .and_return(allowlist_source)
+          )
+        end
+
+        it 'does not add any offenses' do
+          expect_no_offenses(source, file_path)
         end
       end
 
