@@ -212,6 +212,13 @@ RSpec.describe RuboCop::Cop::Flexport::GlobalModelAccessFromEngine, :config do
           .and_return(factory)
       end
 
+      # We cache factories at the class level, so that we don't have to compute
+      # them again for every file. Clear the cache after each test to ensure we
+      # run each test with a clean slate.
+      after do
+        described_class.global_factories_cache = nil
+      end
+
       context 'when file is not a spec' do
         it 'does not add any offenses' do
           expect_no_offenses(source, engine_file)

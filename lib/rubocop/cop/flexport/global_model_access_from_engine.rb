@@ -61,6 +61,10 @@ module RuboCop
           (send _ {:belongs_to :has_one :has_many} sym $hash)
         PATTERN
 
+        class << self
+          attr_accessor :global_factories_cache
+        end
+
         def on_const(node)
           return unless in_enforced_engine_file?
           return unless global_model_const?(node)
@@ -114,7 +118,9 @@ module RuboCop
         end
 
         def global_factories
-          @global_factories ||= spec_factory_paths.flat_map do |path|
+          # Cache factories at the class level so that we don't have to fetch
+          # them again for every file we lint.
+          self.class.global_factories_cache ||= spec_factory_paths.flat_map do |path|
             source_code = File.read(path)
             source = RuboCop::ProcessedSource.new(source_code, RUBY_VERSION.to_f)
             find_factories(source.ast)

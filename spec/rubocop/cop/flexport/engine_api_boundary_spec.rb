@@ -345,6 +345,13 @@ RSpec.describe RuboCop::Cop::Flexport::EngineApiBoundary do
           .and_return(factory)
       end
 
+      # We cache factories at the class level, so that we don't have to compute
+      # them again for every file. Clear the cache after each test to ensure we
+      # run each test with a clean slate.
+      after do
+        described_class.factory_engines_cache = nil
+      end
+
       context 'when file is not a spec' do
         let(:file_path) { 'engines/my_engine/lib/foo.rb' }
 
