@@ -186,6 +186,79 @@ RSpec.describe RuboCop::Cop::Flexport::GlobalModelAccessFromEngine, :config do
       end
     end
 
+    describe 'using global spec factories from engine' do
+      let(:factory_path) { 'spec/factories/port.rb' }
+      let(:factory) do
+        <<~RUBY
+          FactoryBot.define do
+            factory :port
+          end
+        RUBY
+      end
+      let(:source) do
+        <<~RUBY
+          create(:port)
+        RUBY
+      end
+
+      before do
+        allow(Dir)
+          .to receive(:[])
+          .with('spec/factories/**/*.rb')
+          .and_return([factory_path])
+        allow(File)
+          .to receive(:read)
+          .with(factory_path)
+          .and_return(factory)
+      end
+
+      # We cache factories at the class level, so that we don't have to compute
+      # them again for every file. Clear the cache after each test to ensure we
+      # run each test with a clean slate.
+      after do
+        described_class.global_factories_cache = nil
+      end
+
+      context 'when file is not a spec' do
+        it 'does not add any offenses' do
+          expect_no_offenses(source, engine_file)
+        end
+      end
+
+      context 'when file is a spec' do
+        let(:engine_file) { '/root/engines/my_engine/spec/foo_spec.rb' }
+
+        context 'when engine is not in the allowed list' do
+          let(:source) do
+            <<~RUBY
+              create(:port)
+              ^^^^^^^^^^^^^ Direct access of global model `Port` from within Rails Engine.
+            RUBY
+          end
+
+          it 'adds an offense' do
+            expect_offense(source, engine_file)
+          end
+        end
+
+        context 'when engine is in the allowed list' do
+          let(:config) do
+            RuboCop::Config.new(
+              'Flexport/GlobalModelAccessFromEngine' => {
+                'EnginesPath' => 'engines',
+                'GlobalModelsPath' => 'app/models/',
+                'AllowGlobalFactoryBotFromEngines' => ['my_engine']
+              }
+            )
+          end
+
+          it 'does not add any offenses' do
+            expect_no_offenses(source, engine_file)
+          end
+        end
+      end
+    end
+
     context 'nested global model' do
       describe 'access of global model from engine' do
         let(:source) do

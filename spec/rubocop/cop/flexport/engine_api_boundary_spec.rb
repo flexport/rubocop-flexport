@@ -317,6 +317,113 @@ RSpec.describe RuboCop::Cop::Flexport::EngineApiBoundary do
         expect_offense(source)
       end
     end
+
+    describe 'using spec factories' do
+      let(:file_path) { 'engines/my_engine/spec/foo_spec.rb' }
+      let(:factory_path) { 'engines/other_engine/spec/factories/port.rb' }
+      let(:factory) do
+        <<~RUBY
+          FactoryBot.define do
+            factory :port, class: ::OtherEngine::Port
+          end
+        RUBY
+      end
+      let(:source) do
+        <<~RUBY
+          create(:port)
+        RUBY
+      end
+
+      before do
+        allow(Dir)
+          .to receive(:[])
+          .with('engines/*/spec/factories/**/*.rb')
+          .and_return([factory_path])
+        allow(File)
+          .to receive(:read)
+          .with(factory_path)
+          .and_return(factory)
+      end
+
+      # We cache factories at the class level, so that we don't have to compute
+      # them again for every file. Clear the cache after each test to ensure we
+      # run each test with a clean slate.
+      after do
+        described_class.factory_engines_cache = nil
+      end
+
+      context 'when file is not a spec' do
+        let(:file_path) { 'engines/my_engine/lib/foo.rb' }
+
+        it 'does not add any offenses' do
+          expect_no_offenses(source, file_path)
+        end
+      end
+
+      context 'when factory is defined in same engine' do
+        let(:factory_path) { 'engines/my_engine/spec/factories/port.rb' }
+
+        it 'does not add any offenses' do
+          expect_no_offenses(source, file_path)
+        end
+      end
+
+      context 'when factory is defined in other engine' do
+        let(:source) do
+          <<~RUBY
+            create(:port)
+            ^^^^^^^^^^^^^ Direct access of OtherEngine engine. Only access engine via OtherEngine::Api.
+          RUBY
+        end
+
+        it 'adds an offense' do
+          expect_offense(source, file_path)
+        end
+      end
+
+      context "when model is in other engine's allowlist" do
+        let(:allowlist_source) do
+          <<~RUBY
+            module OtherEngine::Api::Allowlist
+              PUBLIC_TYPES = [
+                OtherEngine::Port,
+              ]
+            end
+          RUBY
+        end
+        let(:allowlist_file) { 'engines/other_engine/app/api/other_engine/api/_allowlist.rb' }
+
+        before do
+          allow(File).to(
+            receive(:file?)
+              .with(allowlist_file)
+              .and_return(true)
+          )
+          allow(File).to(
+            receive(:read)
+              .with(allowlist_file)
+              .and_return(allowlist_source)
+          )
+        end
+
+        it 'does not add any offenses' do
+          expect_no_offenses(source, file_path)
+        end
+      end
+
+      context 'when engine is in the allowed list' do
+        let(:config_params) do
+          {
+            'EnginesPath' => 'engines',
+            'AllowCrossEngineFactoryBotFromEngines' => ['my_engine']
+          }
+        end
+
+        it 'does not add any offenses' do
+          expect_no_offenses(source, file_path)
+        end
+      end
+    end
   end
 
   context 'when allowlist defined' do

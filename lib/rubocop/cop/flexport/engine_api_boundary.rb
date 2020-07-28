@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'digest/sha1'
+
 # rubocop:disable Metrics/ClassLength
 module RuboCop
   module Cop
@@ -38,6 +40,11 @@ module RuboCop
       #
       # The cop detects cross-engine associations as well as cross-engine
       # module access.
+      #
+      # The cop will complain if you use FactoryBot factories defined in other
+      # engines in your engine's specs. You can disable this check by adding
+      # the engine name to `AllowCrossEngineFactoryBotFromEngines` in
+      # .rubocop.yml.
       #
       # # Isolation guarantee
       #
@@ -141,6 +148,7 @@ module RuboCop
       class EngineApiBoundary < Cop
         include EngineApi
         include EngineNodeContext
+        include FactoryBotUsage
 
         MSG = 'Direct access of %<accessed_engine>s engine. ' \
               'Only access engine via %<accessed_engine>s::Api.'
@@ -159,6 +167,10 @@ module RuboCop
         def_node_matcher :rails_association_hash_args, <<-PATTERN
           (send _ {:belongs_to :has_one :has_many} sym $hash)
         PATTERN
+
+        class << self
+          attr_accessor :factory_engines_cache
+        end
 
         def on_const(node)
           return if in_module_or_class_declaration?(node)
@@ -179,19 +191,42 @@ module RuboCop
 
         def on_send(node)
           rails_association_hash_args(node) do |assocation_hash_args|
-            class_name_node = extract_class_name_node(assocation_hash_args)
-            next if class_name_node.nil?
+            check_for_cross_engine_rails_association(node, assocation_hash_args)
+          end
+          return unless check_for_cross_engine_factory_bot?
 
-            accessed_engine = extract_model_engine(class_name_node)
-            next if accessed_engine.nil?
-            next if valid_engine_access?(node, accessed_engine)
-
-            add_offense(class_name_node, message: message(accessed_engine))
+          factory_bot_usage(node) do |factory_node|
+            check_for_cross_engine_factory_bot_usage(node, factory_node)
           end
         end
 
+        def check_for_cross_engine_rails_association(node, assocation_hash_args)
+          class_name_node = extract_class_name_node(assocation_hash_args)
+          return if class_name_node.nil?
+
+          accessed_engine = extract_model_engine(class_name_node)
+          return if accessed_engine.nil?
+          return if valid_engine_access?(node, accessed_engine)
+
+          add_offense(class_name_node, message: message(accessed_engine))
+        end
+
+        def check_for_cross_engine_factory_bot_usage(node, factory_node)
+          factory = factory_node.children[0]
+          accessed_engine, model_class_name = factory_engines[factory]
+          return if accessed_engine.nil?
+
+          model_class_node = parse_ast(model_class_name)
+          return if valid_engine_access?(model_class_node, accessed_engine)
+
+          add_offense(node, message: message(accessed_engine))
+        end
+
         def external_dependency_checksum
-          engine_api_files_modified_time_checksum(engines_path)
+          checksum = engine_api_files_modified_time_checksum(engines_path)
+          return checksum unless check_for_cross_engine_factory_bot?
+
+          checksum + spec_factories_modified_time_checksum
         end
 
         private
@@ -296,14 +331,15 @@ module RuboCop
         end
 
         def current_engine
-          @current_engine ||= begin
-            file_path = processed_source.path
-            if file_path&.include?(engines_path)
-              parts = file_path.split(engines_path)
-              engine_dir = parts.last.split('/').first
-              ActiveSupport::Inflector.camelize(engine_dir) if engine_dir
-            end
-          end
+          @current_engine ||= engine_name_from_path(processed_source.path)
+        end
+
+        def engine_name_from_path(file_path)
+          return nil unless file_path&.include?(engines_path)
+
+          parts = file_path.split(engines_path)
+          engine_dir = parts.last.split('/').first
+          ActiveSupport::Inflector.camelize(engine_dir) if engine_dir
         end
 
         def in_engine_file?(accessed_engine)
@@ -333,7 +369,7 @@ module RuboCop
 
           depth = 0
           max_depth = 5
-          while node.const_type? && depth < max_depth
+          while node&.const_type? && depth < max_depth
             full_const_name = remove_leading_colons(node.source)
             return true if allowlist.include?(full_const_name)
 
@@ -392,6 +428,37 @@ module RuboCop
 
         def strongly_protected_engine?(engine)
           strongly_protected_engines.include?(engine)
+        end
+
+        def allow_cross_engine_factory_bot_from_engines
+          @allow_cross_engine_factory_bot_from_engines ||=
+            camelize_all(cop_config['AllowCrossEngineFactoryBotFromEngines'] || [])
+        end
+
+        def check_for_cross_engine_factory_bot?
+          spec_file? && !allow_cross_engine_factory_bot_from_engines.include?(current_engine)
+        end
+
+        # Maps factories to the engine where they are defined.
+        def factory_engines
+          # Cache factories at the class level so that we don't have to fetch
+          # them again for every file we lint.
+          self.class.factory_engines_cache ||= spec_factory_paths.each_with_object({}) do |path, h|
+            engine_name = engine_name_from_path(path)
+            ast = parse_ast(File.read(path))
+            find_factories(ast).each do |factory, model_class_name|
+              h[factory] = [engine_name, model_class_name]
+            end
+          end
+        end
+
+        def spec_factory_paths
+          @spec_factory_paths ||= Dir["#{engines_path}*/spec/factories/**/*.rb"]
+        end
+
+        def spec_factories_modified_time_checksum
+          mtimes = spec_factory_paths.sort.map { |f| File.mtime(f) }
+          Digest::SHA1.hexdigest(mtimes.join)
         end
       end
     end

@@ -62,8 +62,7 @@ module RuboCop
         File.join(engines_path, "#{raw_name}/app/api/#{raw_name}/api/")
       end
 
-      def parse_ast(file_path)
-        source_code = File.read(file_path)
+      def parse_ast(source_code)
         source = RuboCop::ProcessedSource.new(source_code, RUBY_VERSION.to_f)
         source.ast
       end
@@ -103,7 +102,7 @@ module RuboCop
         #             s(:const, nil, :Trucking), :LoadTypes)), :freeze)))
         #
         # We want the :begin in the 2nd case, the :module in the 1st case.
-        module_node = parse_ast(path)
+        module_node = parse_ast(File.read(path))
         module_block_node = module_node&.children&.[](1)
         if module_block_node&.begin_type?
           module_block_node
