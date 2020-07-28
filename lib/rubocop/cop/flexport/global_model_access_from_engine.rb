@@ -82,7 +82,7 @@ module RuboCop
             check_for_rails_association_with_global_model(assocation_hash_args)
           end
 
-          return unless should_check_for_global_factory_bot?
+          return unless check_for_global_factory_bot?
 
           factory_bot_usage(node) do |factory_node|
             check_for_global_factory_bot_usage(node, factory_node)
@@ -109,7 +109,7 @@ module RuboCop
         # we override this method to bust the RuboCop cache when those files
         # change.
         def external_dependency_checksum
-          if should_check_for_global_factory_bot?
+          if check_for_global_factory_bot?
             Digest::SHA1.hexdigest((model_dir_paths + global_factories.keys.sort).join)
           else
             Digest::SHA1.hexdigest(model_dir_paths.join)
@@ -181,7 +181,7 @@ module RuboCop
           end
         end
 
-        def should_check_for_global_factory_bot?
+        def check_for_global_factory_bot?
           spec_file? && allow_global_factory_bot_from_engines.none? do |engine|
             processed_source.path.include?(File.join(engines_path, engine, ''))
           end

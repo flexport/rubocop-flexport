@@ -193,7 +193,7 @@ module RuboCop
           rails_association_hash_args(node) do |assocation_hash_args|
             check_for_cross_engine_rails_association(node, assocation_hash_args)
           end
-          return unless should_check_for_cross_engine_factory_bot?
+          return unless check_for_cross_engine_factory_bot?
 
           factory_bot_usage(node) do |factory_node|
             check_for_cross_engine_factory_bot_usage(node, factory_node)
@@ -224,7 +224,7 @@ module RuboCop
 
         def external_dependency_checksum
           checksum = engine_api_files_modified_time_checksum(engines_path)
-          return checksum unless should_check_for_cross_engine_factory_bot?
+          return checksum unless check_for_cross_engine_factory_bot?
 
           checksum + spec_factories_modified_time_checksum
         end
@@ -435,7 +435,7 @@ module RuboCop
             camelize_all(cop_config['AllowCrossEngineFactoryBotFromEngines'] || [])
         end
 
-        def should_check_for_cross_engine_factory_bot?
+        def check_for_cross_engine_factory_bot?
           spec_file? && !allow_cross_engine_factory_bot_from_engines.include?(current_engine)
         end
 
