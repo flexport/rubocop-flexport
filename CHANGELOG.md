@@ -2,10 +2,15 @@
 
 ## master (unreleased)
 
+## 0.10.1
+
+- Correctly determines the model class name of FactoryBot factories defined with
+  an explicit `parent` parameter.
+
 ## 0.10.0
 
-- EngineApiBoundary cop detects cross-engine use of FactoryBoy factories.
-- GlobalModelAccessFromEngine cop detects use of global FactoryBoy factories.
+- EngineApiBoundary cop detects cross-engine use of FactoryBot factories.
+- GlobalModelAccessFromEngine cop detects use of global FactoryBot factories.
 
 ## 0.9.0
 
