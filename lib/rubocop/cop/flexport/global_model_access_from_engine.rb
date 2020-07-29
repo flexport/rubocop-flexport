@@ -129,21 +129,12 @@ module RuboCop
         def global_factories
           # Cache factories at the class level so that we don't have to fetch
           # them again for every file we lint.
-          self.class.global_factories_cache ||= spec_factory_paths.each_with_object({}) do |path, h|
-            source_code = File.read(path)
-            source = RuboCop::ProcessedSource.new(source_code, RUBY_VERSION.to_f)
-            find_factories(source.ast).each do |factory, model_class_name|
-              h[factory] = model_class_name
-            end
-          end
+          self.class.global_factories_cache ||=
+            find_factories.reject { |path| path.start_with?(engines_path) }.values.reduce(:merge)
         end
 
         def model_dir_paths
           Dir[File.join(global_models_path, '**/*.rb')]
-        end
-
-        def spec_factory_paths
-          @spec_factory_paths ||= Dir['spec/factories/**/*.rb']
         end
 
         def calculate_global_models

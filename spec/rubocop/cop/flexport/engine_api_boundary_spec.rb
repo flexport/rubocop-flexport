@@ -337,7 +337,7 @@ RSpec.describe RuboCop::Cop::Flexport::EngineApiBoundary do
       before do
         allow(Dir)
           .to receive(:[])
-          .with('engines/*/spec/factories/**/*.rb')
+          .with(a_string_matching(/factories/))
           .and_return([factory_path])
         allow(File)
           .to receive(:read)

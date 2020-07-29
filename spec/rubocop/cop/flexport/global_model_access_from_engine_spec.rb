@@ -204,7 +204,7 @@ RSpec.describe RuboCop::Cop::Flexport::GlobalModelAccessFromEngine, :config do
       before do
         allow(Dir)
           .to receive(:[])
-          .with('spec/factories/**/*.rb')
+          .with(a_string_matching(/factories/))
           .and_return([factory_path])
         allow(File)
           .to receive(:read)

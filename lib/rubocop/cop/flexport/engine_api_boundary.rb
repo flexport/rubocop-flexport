@@ -443,21 +443,17 @@ module RuboCop
         def factory_engines
           # Cache factories at the class level so that we don't have to fetch
           # them again for every file we lint.
-          self.class.factory_engines_cache ||= spec_factory_paths.each_with_object({}) do |path, h|
+          self.class.factory_engines_cache ||= find_factories.each_with_object({}) do |factory_file, h|
+            path, factories = factory_file
             engine_name = engine_name_from_path(path)
-            ast = parse_ast(File.read(path))
-            find_factories(ast).each do |factory, model_class_name|
+            factories.each do |factory, model_class_name|
               h[factory] = [engine_name, model_class_name]
             end
           end
         end
 
-        def spec_factory_paths
-          @spec_factory_paths ||= Dir["#{engines_path}*/spec/factories/**/*.rb"]
-        end
-
         def spec_factories_modified_time_checksum
-          mtimes = spec_factory_paths.sort.map { |f| File.mtime(f) }
+          mtimes = factory_files.sort.map { |f| File.mtime(f) }
           Digest::SHA1.hexdigest(mtimes.join)
         end
       end
