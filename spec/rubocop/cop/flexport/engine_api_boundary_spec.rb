@@ -423,6 +423,19 @@ RSpec.describe RuboCop::Cop::Flexport::EngineApiBoundary do
           expect_no_offenses(source, file_path)
         end
       end
+
+      context 'when engine is unprotected' do
+        let(:config_params) do
+          {
+            'EnginesPath' => 'engines',
+            'UnprotectedEngines' => ['other_engine']
+          }
+        end
+
+        it 'does not add any offenses' do
+          expect_no_offenses(source, file_path)
+        end
+      end
     end
   end
 

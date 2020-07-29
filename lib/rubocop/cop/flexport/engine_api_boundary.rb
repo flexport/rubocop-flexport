@@ -214,7 +214,7 @@ module RuboCop
         def check_for_cross_engine_factory_bot_usage(node, factory_node)
           factory = factory_node.children[0]
           accessed_engine, model_class_name = factory_engines[factory]
-          return if accessed_engine.nil?
+          return if accessed_engine.nil? || !protected_engines.include?(accessed_engine)
 
           model_class_node = parse_ast(model_class_name)
           return if valid_engine_access?(model_class_node, accessed_engine)
