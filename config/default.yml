@@ -6,6 +6,7 @@ Flexport/EngineApiBoundary:
   UnprotectedEngines: []
   StronglyProtectedEngines: []
   EngineSpecificOverrides: []
+  FactoryBotEnabled: false
   FactoryBotOutboundAccessAllowedEngines: []
 
 Flexport/GlobalModelAccessFromEngine:
@@ -17,6 +18,7 @@ Flexport/GlobalModelAccessFromEngine:
   GlobalModelsPath: app/models/
   DisabledEngines: []
   AllowedGlobalModels: []
+  FactoryBotEnabled: false
   FactoryBotGlobalAccessAllowedEngines: []
   Include:
     - '**/*.rb'

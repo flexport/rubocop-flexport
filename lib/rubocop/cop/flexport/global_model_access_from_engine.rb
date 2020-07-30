@@ -173,7 +173,7 @@ module RuboCop
         end
 
         def check_for_global_factory_bot?
-          spec_file? && factory_bot_global_access_allowed_engines.none? do |engine|
+          spec_file? && factory_bot_enabled? && factory_bot_global_access_allowed_engines.none? do |engine|
             processed_source.path.include?(File.join(engines_path, engine, ''))
           end
         end
@@ -216,6 +216,10 @@ module RuboCop
 
         def factory_bot_global_access_allowed_engines
           cop_config['FactoryBotGlobalAccessAllowedEngines'] || []
+        end
+
+        def factory_bot_enabled?
+          cop_config['FactoryBotEnabled']
         end
 
         def allowed_global_models

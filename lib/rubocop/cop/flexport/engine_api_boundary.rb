@@ -435,8 +435,14 @@ module RuboCop
             camelize_all(cop_config['FactoryBotOutboundAccessAllowedEngines'] || [])
         end
 
+        def factory_bot_enabled?
+          cop_config['FactoryBotEnabled']
+        end
+
         def check_for_cross_engine_factory_bot?
-          spec_file? && !factory_bot_outbound_access_allowed_engines.include?(current_engine)
+          spec_file? &&
+            factory_bot_enabled? &&
+            !factory_bot_outbound_access_allowed_engines.include?(current_engine)
         end
 
         # Maps factories to the engine where they are defined.

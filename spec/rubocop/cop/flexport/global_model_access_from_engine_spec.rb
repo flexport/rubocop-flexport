@@ -200,6 +200,15 @@ RSpec.describe RuboCop::Cop::Flexport::GlobalModelAccessFromEngine, :config do
           create(:port)
         RUBY
       end
+      let(:config) do
+        RuboCop::Config.new(
+          'Flexport/GlobalModelAccessFromEngine' => {
+            'EnginesPath' => 'engines',
+            'GlobalModelsPath' => 'app/models/',
+            'FactoryBotEnabled' => true
+          }
+        )
+      end
 
       before do
         allow(Dir)
@@ -248,6 +257,22 @@ RSpec.describe RuboCop::Cop::Flexport::GlobalModelAccessFromEngine, :config do
                 'EnginesPath' => 'engines',
                 'GlobalModelsPath' => 'app/models/',
                 'FactoryBotGlobalAccessAllowedEngines' => ['my_engine']
+              }
+            )
+          end
+
+          it 'does not add any offenses' do
+            expect_no_offenses(source, engine_file)
+          end
+        end
+
+        context 'when feature is disabled' do
+          let(:config) do
+            RuboCop::Config.new(
+              'Flexport/GlobalModelAccessFromEngine' => {
+                'EnginesPath' => 'engines',
+                'GlobalModelsPath' => 'app/models/',
+                'FactoryBotEnabled' => false
               }
             )
           end

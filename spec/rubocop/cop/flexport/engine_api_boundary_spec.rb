@@ -333,6 +333,12 @@ RSpec.describe RuboCop::Cop::Flexport::EngineApiBoundary do
           create(:port)
         RUBY
       end
+      let(:config_params) do
+        {
+          'EnginesPath' => 'engines',
+          'FactoryBotEnabled' => true
+        }
+      end
 
       before do
         allow(Dir)
@@ -429,6 +435,19 @@ RSpec.describe RuboCop::Cop::Flexport::EngineApiBoundary do
           {
             'EnginesPath' => 'engines',
             'UnprotectedEngines' => ['other_engine']
+          }
+        end
+
+        it 'does not add any offenses' do
+          expect_no_offenses(source, file_path)
+        end
+      end
+
+      context 'when feature is disabled' do
+        let(:config_params) do
+          {
+            'EnginesPath' => 'engines',
+            'FactoryBotEnabled' => false
           }
         end
 

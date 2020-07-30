@@ -6,6 +6,7 @@
 
 - Correctly determines the model class name of FactoryBot factories defined with
   an explicit `parent` parameter.
+- Disable FactoryBot detection by default.
 
 ## 0.10.0
 
