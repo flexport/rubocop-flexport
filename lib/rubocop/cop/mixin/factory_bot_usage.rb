@@ -9,7 +9,7 @@ module RuboCop
     module FactoryBotUsage
       extend NodePattern::Macros
 
-      Factory = Struct.new('Factory', :name, :aliases, :parent, :model_class_name, keyword_init: true)
+      Factory = Struct.new('Factory', :name, :aliases, :parent, :model_class_name)
 
       FACTORY_BOT_METHODS = %i[
         attributes_for
@@ -129,12 +129,12 @@ module RuboCop
       def parse_factory_node(node)
         factory_name_node, factory_config_node = node.children[2..3]
 
-        Factory.new(
-          name: factory_name_node.children[0],
-          aliases: extract_aliases(factory_config_node),
-          parent: extract_parent(factory_config_node),
-          model_class_name: extract_model_class_name(factory_config_node)
-        )
+        name = factory_name_node.children[0]
+        aliases = extract_aliases(factory_config_node)
+        parent = extract_parent(factory_config_node)
+        model_class_name = extract_model_class_name(factory_config_node)
+
+        Factory.new(name, aliases, parent, model_class_name)
       end
 
       def extract_aliases(factory_config_hash_node)
