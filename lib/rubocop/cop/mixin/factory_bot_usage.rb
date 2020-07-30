@@ -9,6 +9,8 @@ module RuboCop
     module FactoryBotUsage
       extend NodePattern::Macros
 
+      Factory = Struct.new('Factory', :name, :aliases, :parent, :model_class_name, keyword_init: true)
+
       FACTORY_BOT_METHODS = %i[
         attributes_for
         attributes_for_list
@@ -47,6 +49,16 @@ module RuboCop
         @factories
       end
 
+      def factory_files
+        @factory_files ||= Dir['spec/factories/**/*.rb'] + Dir["#{engines_path}*/spec/factories/**/*.rb"]
+      end
+
+      def engines_path
+        raise NotImplementedError
+      end
+
+      private
+
       def traverse_factory_files
         factory_files.each do |path|
           @factories[path] = {}
@@ -72,34 +84,16 @@ module RuboCop
         end
       end
 
-      def factory_files
-        @factory_files ||= Dir['spec/factories/**/*.rb'] + Dir["#{engines_path}*/spec/factories/**/*.rb"]
-      end
-
-      def engines_path
-        raise NotImplementedError
-      end
-
-      private
-
       def traverse_node(node, path, parent = nil, model_class_name = nil)
         return unless node.is_a?(Parser::AST::Node)
 
         factory_node = extract_factory_node(node)
         if factory_node
-          factory_name, aliases, parent, model_class_name = parse_factory_node(
-            factory_node,
-            model_class_name,
-            parent
-          )
+          factory = parse_factory_node(factory_node)
+          parent = determine_parent(factory, parent)
+          model_class_name = determine_model_class_name(factory, model_class_name)
           if factory_node?(node)
-            ([factory_name] + aliases).each do |name|
-              if parent
-                @parents[path][name] = parent
-              else
-                @factories[path][name] = model_class_name
-              end
-            end
+            register_factory(path, factory.name, factory.aliases, parent, model_class_name)
             return
           end
         end
@@ -112,6 +106,16 @@ module RuboCop
         return node if factory_node?(node)
       end
 
+      def register_factory(path, factory_name, aliases, parent, model_class_name)
+        ([factory_name] + aliases).each do |name|
+          if parent
+            @parents[path][name] = parent
+          else
+            @factories[path][name] = model_class_name
+          end
+        end
+      end
+
       def factory_block?(node)
         return false if node&.type != :block
 
@@ -122,22 +126,15 @@ module RuboCop
         node&.type == :send && node.children[1] == :factory
       end
 
-      def parse_factory_node(
-        node,
-        model_class_name_from_surrounding_block = nil,
-        parent_from_surrounding_block = nil
-      )
+      def parse_factory_node(node)
         factory_name_node, factory_config_node = node.children[2..3]
 
-        factory_name = factory_name_node.children[0]
-        aliases = extract_aliases(factory_config_node)
-        explicit_model_class_name = extract_model_class_name(factory_config_node)
-        parent = explicit_model_class_name ? nil : extract_parent(factory_config_node) || parent_from_surrounding_block
-        model_class_name = explicit_model_class_name ||
-                           model_class_name_from_surrounding_block ||
-                           ActiveSupport::Inflector.camelize(factory_name)
-
-        [factory_name, aliases, parent, model_class_name]
+        Factory.new(
+          name: factory_name_node.children[0],
+          aliases: extract_aliases(factory_config_node),
+          parent: extract_parent(factory_config_node),
+          model_class_name: extract_model_class_name(factory_config_node)
+        )
       end
 
       def extract_aliases(factory_config_hash_node)
@@ -173,6 +170,20 @@ module RuboCop
         end
 
         nil
+      end
+
+      def determine_parent(factory, parent_from_surrounding_block)
+        # If the factory specifies an explicit model class name, we don't need
+        # to resolve the parent to determine the model class name.
+        return nil if factory.model_class_name
+
+        factory.parent || parent_from_surrounding_block
+      end
+
+      def determine_model_class_name(factory, model_class_name_from_surrounding_block)
+        factory.model_class_name ||
+          model_class_name_from_surrounding_block ||
+          ActiveSupport::Inflector.camelize(factory.name)
       end
     end
     # rubocop:enable Metrics/ModuleLength
