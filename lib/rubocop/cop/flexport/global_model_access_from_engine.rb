@@ -47,7 +47,7 @@ module RuboCop
       #
       # This cop will also complain if you try to use global FactoryBot
       # factories in your engine's specs. To disable this behavior for your
-      # engine, add it to the `AllowGlobalFactoryBotFromEngines` list in
+      # engine, add it to the `FactoryBotGlobalAccessAllowedEngines` list in
       # .rubocop.yml.
       #
       class GlobalModelAccessFromEngine < Cop
@@ -173,7 +173,7 @@ module RuboCop
         end
 
         def check_for_global_factory_bot?
-          spec_file? && allow_global_factory_bot_from_engines.none? do |engine|
+          spec_file? && factory_bot_global_access_allowed_engines.none? do |engine|
             processed_source.path.include?(File.join(engines_path, engine, ''))
           end
         end
@@ -214,8 +214,8 @@ module RuboCop
           end
         end
 
-        def allow_global_factory_bot_from_engines
-          cop_config['AllowGlobalFactoryBotFromEngines'] || []
+        def factory_bot_global_access_allowed_engines
+          cop_config['FactoryBotGlobalAccessAllowedEngines'] || []
         end
 
         def allowed_global_models

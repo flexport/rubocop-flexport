@@ -247,7 +247,7 @@ RSpec.describe RuboCop::Cop::Flexport::GlobalModelAccessFromEngine, :config do
               'Flexport/GlobalModelAccessFromEngine' => {
                 'EnginesPath' => 'engines',
                 'GlobalModelsPath' => 'app/models/',
-                'AllowGlobalFactoryBotFromEngines' => ['my_engine']
+                'FactoryBotGlobalAccessAllowedEngines' => ['my_engine']
               }
             )
           end

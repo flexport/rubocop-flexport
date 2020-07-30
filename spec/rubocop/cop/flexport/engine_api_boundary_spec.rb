@@ -415,7 +415,7 @@ RSpec.describe RuboCop::Cop::Flexport::EngineApiBoundary do
         let(:config_params) do
           {
             'EnginesPath' => 'engines',
-            'AllowCrossEngineFactoryBotFromEngines' => ['my_engine']
+            'FactoryBotOutboundAccessAllowedEngines' => ['my_engine']
           }
         end
 

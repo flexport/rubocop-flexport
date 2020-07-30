@@ -43,7 +43,7 @@ module RuboCop
       #
       # The cop will complain if you use FactoryBot factories defined in other
       # engines in your engine's specs. You can disable this check by adding
-      # the engine name to `AllowCrossEngineFactoryBotFromEngines` in
+      # the engine name to `FactoryBotOutboundAccessAllowedEngines` in
       # .rubocop.yml.
       #
       # # Isolation guarantee
@@ -430,13 +430,13 @@ module RuboCop
           strongly_protected_engines.include?(engine)
         end
 
-        def allow_cross_engine_factory_bot_from_engines
-          @allow_cross_engine_factory_bot_from_engines ||=
-            camelize_all(cop_config['AllowCrossEngineFactoryBotFromEngines'] || [])
+        def factory_bot_outbound_access_allowed_engines
+          @factory_bot_outbound_access_allowed_engines ||=
+            camelize_all(cop_config['FactoryBotOutboundAccessAllowedEngines'] || [])
         end
 
         def check_for_cross_engine_factory_bot?
-          spec_file? && !allow_cross_engine_factory_bot_from_engines.include?(current_engine)
+          spec_file? && !factory_bot_outbound_access_allowed_engines.include?(current_engine)
         end
 
         # Maps factories to the engine where they are defined.
