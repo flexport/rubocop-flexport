@@ -28,6 +28,21 @@ module RuboCop
         (send _ {#{FACTORY_BOT_METHODS.map(&:inspect).join(' ')}} $sym)
       PATTERN
 
+      # Cache factories at the class level so that we don't have to fetch them
+      # again for every file we lint. We use class variables here so that the
+      # cache can be shared by all cops that include this module.
+      # rubocop:disable Style/ClassVars
+      @@factories = nil
+
+      def self.factories_cache
+        @@factories
+      end
+
+      def self.factories_cache=(factories)
+        @@factories = factories
+      end
+      # rubocop:enable Style/ClassVars
+
       def spec_file?
         processed_source&.path&.match?(/_spec\.rb$/) || false
       end
@@ -35,18 +50,20 @@ module RuboCop
       # Parses factory definition files, returning a hash mapping factory names
       # to model class names for each file.
       def find_factories
-        # We'll add factories here as we parse the factory files.
-        @factories = {}
+        RuboCop::Cop::FactoryBotUsage.factories_cache ||= begin
+          # We'll add factories here as we parse the factory files.
+          @factories = {}
 
-        # We'll add factories that specify a parent here, so we can resolve the
-        # reference to the parent after we have finished parsing all the files.
-        @parents = {}
+          # We'll add factories that specify a parent here, so we can resolve the
+          # reference to the parent after we have finished parsing all the files.
+          @parents = {}
 
-        # Parse the factory files, then resolve any parent references.
-        traverse_factory_files
-        resolve_parents
+          # Parse the factory files, then resolve any parent references.
+          traverse_factory_files
+          resolve_parents
 
-        @factories
+          @factories
+        end
       end
 
       def factory_files

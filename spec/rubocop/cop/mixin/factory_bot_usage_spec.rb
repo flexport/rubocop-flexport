@@ -11,6 +11,10 @@ RSpec.describe RuboCop::Cop::FactoryBotUsage do
     end
   end
 
+  after do
+    described_class.factories_cache = nil
+  end
+
   describe '#find_factories' do
     subject(:factories) { test_cop.new.find_factories }
 

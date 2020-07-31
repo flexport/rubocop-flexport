@@ -61,10 +61,6 @@ module RuboCop
           (send _ {:belongs_to :has_one :has_many} sym $hash)
         PATTERN
 
-        class << self
-          attr_accessor :global_factories_cache
-        end
-
         def on_const(node)
           return unless in_enforced_engine_file?
           return unless global_model_const?(node)
@@ -127,9 +123,7 @@ module RuboCop
         end
 
         def global_factories
-          # Cache factories at the class level so that we don't have to fetch
-          # them again for every file we lint.
-          self.class.global_factories_cache ||=
+          @global_factories ||=
             find_factories.reject { |path| path.start_with?(engines_path) }.values.reduce(:merge)
         end
 

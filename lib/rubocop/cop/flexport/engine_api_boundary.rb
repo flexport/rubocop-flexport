@@ -168,10 +168,6 @@ module RuboCop
           (send _ {:belongs_to :has_one :has_many} sym $hash)
         PATTERN
 
-        class << self
-          attr_accessor :factory_engines_cache
-        end
-
         def on_const(node)
           return if in_module_or_class_declaration?(node)
           # There might be value objects that are named
@@ -447,9 +443,7 @@ module RuboCop
 
         # Maps factories to the engine where they are defined.
         def factory_engines
-          # Cache factories at the class level so that we don't have to fetch
-          # them again for every file we lint.
-          self.class.factory_engines_cache ||= find_factories.each_with_object({}) do |factory_file, h|
+          @factory_engines ||= find_factories.each_with_object({}) do |factory_file, h|
             path, factories = factory_file
             engine_name = engine_name_from_path(path)
             factories.each do |factory, model_class_name|

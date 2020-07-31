@@ -355,7 +355,7 @@ RSpec.describe RuboCop::Cop::Flexport::EngineApiBoundary do
       # them again for every file. Clear the cache after each test to ensure we
       # run each test with a clean slate.
       after do
-        described_class.factory_engines_cache = nil
+        RuboCop::Cop::FactoryBotUsage.factories_cache = nil
       end
 
       context 'when file is not a spec' do
