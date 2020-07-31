@@ -200,11 +200,20 @@ RSpec.describe RuboCop::Cop::Flexport::GlobalModelAccessFromEngine, :config do
           create(:port)
         RUBY
       end
+      let(:config) do
+        RuboCop::Config.new(
+          'Flexport/GlobalModelAccessFromEngine' => {
+            'EnginesPath' => 'engines',
+            'GlobalModelsPath' => 'app/models/',
+            'FactoryBotEnabled' => true
+          }
+        )
+      end
 
       before do
         allow(Dir)
           .to receive(:[])
-          .with('spec/factories/**/*.rb')
+          .with(a_string_matching(/factories/))
           .and_return([factory_path])
         allow(File)
           .to receive(:read)
@@ -216,7 +225,7 @@ RSpec.describe RuboCop::Cop::Flexport::GlobalModelAccessFromEngine, :config do
       # them again for every file. Clear the cache after each test to ensure we
       # run each test with a clean slate.
       after do
-        described_class.global_factories_cache = nil
+        RuboCop::Cop::FactoryBotUsage.factories_cache = nil
       end
 
       context 'when file is not a spec' do
@@ -247,7 +256,23 @@ RSpec.describe RuboCop::Cop::Flexport::GlobalModelAccessFromEngine, :config do
               'Flexport/GlobalModelAccessFromEngine' => {
                 'EnginesPath' => 'engines',
                 'GlobalModelsPath' => 'app/models/',
-                'AllowGlobalFactoryBotFromEngines' => ['my_engine']
+                'FactoryBotGlobalAccessAllowedEngines' => ['my_engine']
+              }
+            )
+          end
+
+          it 'does not add any offenses' do
+            expect_no_offenses(source, engine_file)
+          end
+        end
+
+        context 'when feature is disabled' do
+          let(:config) do
+            RuboCop::Config.new(
+              'Flexport/GlobalModelAccessFromEngine' => {
+                'EnginesPath' => 'engines',
+                'GlobalModelsPath' => 'app/models/',
+                'FactoryBotEnabled' => false
               }
             )
           end

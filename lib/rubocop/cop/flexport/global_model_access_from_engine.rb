@@ -47,7 +47,7 @@ module RuboCop
       #
       # This cop will also complain if you try to use global FactoryBot
       # factories in your engine's specs. To disable this behavior for your
-      # engine, add it to the `AllowGlobalFactoryBotFromEngines` list in
+      # engine, add it to the `FactoryBotGlobalAccessAllowedEngines` list in
       # .rubocop.yml.
       #
       class GlobalModelAccessFromEngine < Cop
@@ -60,10 +60,6 @@ module RuboCop
         def_node_matcher :rails_association_hash_args, <<-PATTERN
           (send _ {:belongs_to :has_one :has_many} sym $hash)
         PATTERN
-
-        class << self
-          attr_accessor :global_factories_cache
-        end
 
         def on_const(node)
           return unless in_enforced_engine_file?
@@ -127,23 +123,12 @@ module RuboCop
         end
 
         def global_factories
-          # Cache factories at the class level so that we don't have to fetch
-          # them again for every file we lint.
-          self.class.global_factories_cache ||= spec_factory_paths.each_with_object({}) do |path, h|
-            source_code = File.read(path)
-            source = RuboCop::ProcessedSource.new(source_code, RUBY_VERSION.to_f)
-            find_factories(source.ast).each do |factory, model_class_name|
-              h[factory] = model_class_name
-            end
-          end
+          @global_factories ||=
+            find_factories.reject { |path| path.start_with?(engines_path) }.values.reduce(:merge)
         end
 
         def model_dir_paths
           Dir[File.join(global_models_path, '**/*.rb')]
-        end
-
-        def spec_factory_paths
-          @spec_factory_paths ||= Dir['spec/factories/**/*.rb']
         end
 
         def calculate_global_models
@@ -182,7 +167,7 @@ module RuboCop
         end
 
         def check_for_global_factory_bot?
-          spec_file? && allow_global_factory_bot_from_engines.none? do |engine|
+          spec_file? && factory_bot_enabled? && factory_bot_global_access_allowed_engines.none? do |engine|
             processed_source.path.include?(File.join(engines_path, engine, ''))
           end
         end
@@ -223,8 +208,12 @@ module RuboCop
           end
         end
 
-        def allow_global_factory_bot_from_engines
-          cop_config['AllowGlobalFactoryBotFromEngines'] || []
+        def factory_bot_global_access_allowed_engines
+          cop_config['FactoryBotGlobalAccessAllowedEngines'] || []
+        end
+
+        def factory_bot_enabled?
+          cop_config['FactoryBotEnabled']
         end
 
         def allowed_global_models

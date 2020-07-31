@@ -43,7 +43,7 @@ module RuboCop
       #
       # The cop will complain if you use FactoryBot factories defined in other
       # engines in your engine's specs. You can disable this check by adding
-      # the engine name to `AllowCrossEngineFactoryBotFromEngines` in
+      # the engine name to `FactoryBotOutboundAccessAllowedEngines` in
       # .rubocop.yml.
       #
       # # Isolation guarantee
@@ -168,10 +168,6 @@ module RuboCop
           (send _ {:belongs_to :has_one :has_many} sym $hash)
         PATTERN
 
-        class << self
-          attr_accessor :factory_engines_cache
-        end
-
         def on_const(node)
           return if in_module_or_class_declaration?(node)
           # There might be value objects that are named
@@ -214,7 +210,7 @@ module RuboCop
         def check_for_cross_engine_factory_bot_usage(node, factory_node)
           factory = factory_node.children[0]
           accessed_engine, model_class_name = factory_engines[factory]
-          return if accessed_engine.nil?
+          return if accessed_engine.nil? || !protected_engines.include?(accessed_engine)
 
           model_class_node = parse_ast(model_class_name)
           return if valid_engine_access?(model_class_node, accessed_engine)
@@ -430,34 +426,34 @@ module RuboCop
           strongly_protected_engines.include?(engine)
         end
 
-        def allow_cross_engine_factory_bot_from_engines
-          @allow_cross_engine_factory_bot_from_engines ||=
-            camelize_all(cop_config['AllowCrossEngineFactoryBotFromEngines'] || [])
+        def factory_bot_outbound_access_allowed_engines
+          @factory_bot_outbound_access_allowed_engines ||=
+            camelize_all(cop_config['FactoryBotOutboundAccessAllowedEngines'] || [])
+        end
+
+        def factory_bot_enabled?
+          cop_config['FactoryBotEnabled']
         end
 
         def check_for_cross_engine_factory_bot?
-          spec_file? && !allow_cross_engine_factory_bot_from_engines.include?(current_engine)
+          spec_file? &&
+            factory_bot_enabled? &&
+            !factory_bot_outbound_access_allowed_engines.include?(current_engine)
         end
 
         # Maps factories to the engine where they are defined.
         def factory_engines
-          # Cache factories at the class level so that we don't have to fetch
-          # them again for every file we lint.
-          self.class.factory_engines_cache ||= spec_factory_paths.each_with_object({}) do |path, h|
+          @factory_engines ||= find_factories.each_with_object({}) do |factory_file, h|
+            path, factories = factory_file
             engine_name = engine_name_from_path(path)
-            ast = parse_ast(File.read(path))
-            find_factories(ast).each do |factory, model_class_name|
+            factories.each do |factory, model_class_name|
               h[factory] = [engine_name, model_class_name]
             end
           end
         end
 
-        def spec_factory_paths
-          @spec_factory_paths ||= Dir["#{engines_path}*/spec/factories/**/*.rb"]
-        end
-
         def spec_factories_modified_time_checksum
-          mtimes = spec_factory_paths.sort.map { |f| File.mtime(f) }
+          mtimes = factory_files.sort.map { |f| File.mtime(f) }
           Digest::SHA1.hexdigest(mtimes.join)
         end
       end

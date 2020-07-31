@@ -6,6 +6,8 @@ Flexport/EngineApiBoundary:
   UnprotectedEngines: []
   StronglyProtectedEngines: []
   EngineSpecificOverrides: []
+  FactoryBotEnabled: false
+  FactoryBotOutboundAccessAllowedEngines: []
 
 Flexport/GlobalModelAccessFromEngine:
   Description: 'Do not directly access global models from within Rails Engines.'
@@ -16,6 +18,8 @@ Flexport/GlobalModelAccessFromEngine:
   GlobalModelsPath: app/models/
   DisabledEngines: []
   AllowedGlobalModels: []
+  FactoryBotEnabled: false
+  FactoryBotGlobalAccessAllowedEngines: []
   Include:
     - '**/*.rb'
 

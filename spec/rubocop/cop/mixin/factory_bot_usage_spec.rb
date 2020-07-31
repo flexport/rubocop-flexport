@@ -4,20 +4,23 @@ RSpec.describe RuboCop::Cop::FactoryBotUsage do
   let(:test_cop) do
     Class.new do
       include RuboCop::Cop::FactoryBotUsage
+
+      def engines_path
+        'engines/'
+      end
     end
   end
 
+  after do
+    described_class.factories_cache = nil
+  end
+
   describe '#find_factories' do
-    subject(:factories) { test_cop.new.find_factories(ast) }
+    subject(:factories) { test_cop.new.find_factories }
 
-    let(:ast) do
-      source = RuboCop::ProcessedSource.new(source_code, RUBY_VERSION.to_f)
-      source.ast
-    end
-
-    let(:source_code) do
-      <<~'RUBY'
-        module NetworkEngine
+    let(:factory_files) do
+      {
+        'engines/network_engine/spec/factories/port_factories.rb' => <<~'RUBY',
           FactoryBot.define do
             sequence :port_name do |n|
               "Test Port ##{n}"
@@ -38,25 +41,64 @@ RSpec.describe RuboCop::Cop::FactoryBotUsage do
                 end
               end
             end
-
-            # Implicit model class
-            factory :terminal
-
-            # Model class defined as string
-            factory :warehouse, class: "WarehouseEngine::Warehouse"
           end
-        end
-      RUBY
+        RUBY
+        'spec/factories/warehouse_factories.rb' => <<~'RUBY',
+          FactoryBot.define do
+            # Model class defined as string
+            factory :warehouse, parent: :location, class: "WarehouseEngine::Warehouse"
+          end
+        RUBY
+        'spec/factories/cfs_factories.rb' => <<~'RUBY',
+          FactoryBot.define do
+            # Explicit parent
+            factory :cfs, parent: :location do
+              factory :flexport_cfs
+            end
+
+            factory :flexport_chicago_cfs, parent: :flexport_cfs
+          end
+        RUBY
+        'spec/factories/location_factories.rb' => <<~'RUBY'
+          FactoryBot.define do
+            # Implicit model class derived from factory name
+            factory :location
+          end
+        RUBY
+      }
+    end
+    let(:engine_factory_paths) do
+      factory_files.keys.select { |path| path.start_with?('engines/') }
+    end
+    let(:global_factory_paths) do
+      factory_files.keys - engine_factory_paths
     end
 
-    it 'returns [factory_name, model_class_name] 2-tuples' do
-      expect(factories).to contain_exactly(
-        [:port, 'NetworkEngine::Port'],
-        [:airport, 'NetworkEngine::Port'],
-        [:airfield, 'NetworkEngine::Port'],
-        [:lax, 'NetworkEngine::Port'],
-        [:terminal, 'Terminal'],
-        [:warehouse, 'WarehouseEngine::Warehouse']
+    before do
+      allow(Dir).to receive(:[]).with('spec/factories/**/*.rb').and_return(global_factory_paths)
+      allow(Dir).to receive(:[]).with('engines/*/spec/factories/**/*.rb').and_return(engine_factory_paths)
+      allow(File).to receive(:read) { |path| factory_files.fetch(path) }
+    end
+
+    it 'returns a mapping of factory names to model class names' do
+      expect(factories).to eq(
+        'engines/network_engine/spec/factories/port_factories.rb' => {
+          port: 'NetworkEngine::Port',
+          airport: 'NetworkEngine::Port',
+          airfield: 'NetworkEngine::Port',
+          lax: 'NetworkEngine::Port'
+        },
+        'spec/factories/warehouse_factories.rb' => {
+          warehouse: 'WarehouseEngine::Warehouse'
+        },
+        'spec/factories/cfs_factories.rb' => {
+          cfs: 'Location',
+          flexport_cfs: 'Location',
+          flexport_chicago_cfs: 'Location'
+        },
+        'spec/factories/location_factories.rb' => {
+          location: 'Location'
+        }
       )
     end
   end

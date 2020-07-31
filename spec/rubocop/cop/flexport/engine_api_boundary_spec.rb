@@ -333,11 +333,17 @@ RSpec.describe RuboCop::Cop::Flexport::EngineApiBoundary do
           create(:port)
         RUBY
       end
+      let(:config_params) do
+        {
+          'EnginesPath' => 'engines',
+          'FactoryBotEnabled' => true
+        }
+      end
 
       before do
         allow(Dir)
           .to receive(:[])
-          .with('engines/*/spec/factories/**/*.rb')
+          .with(a_string_matching(/factories/))
           .and_return([factory_path])
         allow(File)
           .to receive(:read)
@@ -349,7 +355,7 @@ RSpec.describe RuboCop::Cop::Flexport::EngineApiBoundary do
       # them again for every file. Clear the cache after each test to ensure we
       # run each test with a clean slate.
       after do
-        described_class.factory_engines_cache = nil
+        RuboCop::Cop::FactoryBotUsage.factories_cache = nil
       end
 
       context 'when file is not a spec' do
@@ -415,7 +421,33 @@ RSpec.describe RuboCop::Cop::Flexport::EngineApiBoundary do
         let(:config_params) do
           {
             'EnginesPath' => 'engines',
-            'AllowCrossEngineFactoryBotFromEngines' => ['my_engine']
+            'FactoryBotOutboundAccessAllowedEngines' => ['my_engine']
+          }
+        end
+
+        it 'does not add any offenses' do
+          expect_no_offenses(source, file_path)
+        end
+      end
+
+      context 'when engine is unprotected' do
+        let(:config_params) do
+          {
+            'EnginesPath' => 'engines',
+            'UnprotectedEngines' => ['other_engine']
+          }
+        end
+
+        it 'does not add any offenses' do
+          expect_no_offenses(source, file_path)
+        end
+      end
+
+      context 'when feature is disabled' do
+        let(:config_params) do
+          {
+            'EnginesPath' => 'engines',
+            'FactoryBotEnabled' => false
           }
         end
 
