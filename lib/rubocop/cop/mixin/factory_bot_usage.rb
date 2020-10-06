@@ -25,7 +25,7 @@ module RuboCop
       ].freeze
 
       def_node_matcher :factory_bot_usage, <<~PATTERN
-        (send _ {#{FACTORY_BOT_METHODS.map(&:inspect).join(' ')}} $sym)
+        (send _ {#{FACTORY_BOT_METHODS.map(&:inspect).join(' ')}} $sym ...)
       PATTERN
 
       # Cache factories at the class level so that we don't have to fetch them

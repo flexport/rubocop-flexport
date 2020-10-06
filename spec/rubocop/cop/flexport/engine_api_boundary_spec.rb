@@ -387,6 +387,19 @@ RSpec.describe RuboCop::Cop::Flexport::EngineApiBoundary do
         end
       end
 
+      context 'when factory is defined in other engine and an argument is passed to the factory' do
+        let(:source) do
+          <<~RUBY
+            create(:port, name: "Seattle")
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Direct access of OtherEngine engine. Only access engine via OtherEngine::Api.
+          RUBY
+        end
+
+        it 'adds an offense' do
+          expect_offense(source, file_path)
+        end
+      end
+
       context "when model is in other engine's allowlist" do
         let(:allowlist_source) do
           <<~RUBY
