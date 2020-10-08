@@ -22,4 +22,6 @@ Gem::Specification.new do |spec|
 
   spec.add_runtime_dependency 'activesupport', '>= 4.0'
   spec.add_runtime_dependency 'rubocop', '>= 0.70.0'
+
+  spec.required_ruby_version = '>= 2.4'
 end
