@@ -375,15 +375,46 @@ RSpec.describe RuboCop::Cop::Flexport::EngineApiBoundary do
       end
 
       context 'when factory is defined in other engine' do
-        let(:source) do
-          <<~RUBY
-            create(:port)
-            ^^^^^^^^^^^^^ Direct access of OtherEngine engine. Only access engine via OtherEngine::Api.
-          RUBY
+        context 'and no additional arguments are passed to the factory' do
+          let(:source) do
+            <<~RUBY
+              create(:port)
+              ^^^^^^^^^^^^^ Direct access of OtherEngine engine. Only access engine via OtherEngine::Api.
+            RUBY
+          end
+
+          it 'adds an offense' do
+            expect_offense(source, file_path)
+          end
         end
 
-        it 'adds an offense' do
-          expect_offense(source, file_path)
+        context 'and one additional argument is passed to the factory' do
+          let(:source) do
+            <<~RUBY
+              create(:port, name: "Seattle")
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Direct access of OtherEngine engine. Only access engine via OtherEngine::Api.
+            RUBY
+          end
+
+          it 'adds an offense' do
+            expect_offense(source, file_path)
+          end
+        end
+
+        context 'and multiple arguments are passed to the factory' do
+          let(:source) do
+            <<~RUBY
+              create(:port,
+              ^^^^^^^^^^^^^ Direct access of OtherEngine engine. Only access engine via OtherEngine::Api.
+                name: "Seattle",
+                country_code: "US",
+              )
+            RUBY
+          end
+
+          it 'adds an offense' do
+            expect_offense(source, file_path)
+          end
         end
       end
 
