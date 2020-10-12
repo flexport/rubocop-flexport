@@ -2,6 +2,10 @@
 
 ## master (unreleased)
 
+## 0.10.2
+
+- Updates factory_bot_usage matcher to match factory calls with additional arguments
+
 ## 0.10.1
 
 - Correctly determines the model class name of FactoryBot factories defined with
