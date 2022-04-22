@@ -140,7 +140,7 @@ module RuboCop
             file_name = path.gsub(global_models_path, '').gsub('.rb', '')
             ActiveSupport::Inflector.classify(file_name)
           end
-          all_models - allowed_global_models
+          all_models - allowed_global_models + additional_global_models
         end
 
         def extract_class_name_node(assocation_hash_args)
@@ -218,6 +218,10 @@ module RuboCop
 
         def allowed_global_models
           cop_config['AllowedGlobalModels'] || []
+        end
+
+        def additional_global_models
+          cop_config['AdditionalGlobalModels'] || []
         end
       end
     end

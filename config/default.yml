@@ -18,6 +18,7 @@ Flexport/GlobalModelAccessFromEngine:
   GlobalModelsPath: app/models/
   DisabledEngines: []
   AllowedGlobalModels: []
+  AdditionalGlobalModels: []
   FactoryBotEnabled: false
   FactoryBotGlobalAccessAllowedEngines: []
   Include:
