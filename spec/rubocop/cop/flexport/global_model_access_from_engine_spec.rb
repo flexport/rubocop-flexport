@@ -12,7 +12,8 @@ RSpec.describe RuboCop::Cop::Flexport::GlobalModelAccessFromEngine, :config do
         ],
         'EnginesPath' => 'engines',
         'GlobalModelsPath' => 'app/models/',
-        'AllowedGlobalModels' => ['WhitelistedGlobalModel']
+        'AllowedGlobalModels' => ['WhitelistedGlobalModel'],
+        'AdditionalGlobalModels' => ['AnotherGlobalModel']
       }
     )
   end
@@ -153,6 +154,29 @@ RSpec.describe RuboCop::Cop::Flexport::GlobalModelAccessFromEngine, :config do
         <<~RUBY
           SomeGlobalModel.find(123)
           ^^^^^^^^^^^^^^^ Direct access of global model `SomeGlobalModel` from within Rails Engine.
+        RUBY
+      end
+
+      it 'adds an offense' do
+        expect_offense(source, engine_file)
+      end
+
+      context "an engine's name has a prefix that matches a disabled engine" do
+        let(:engine_file) do
+          '/root/engines/fake_disabled_engine_foo/app/file.rb'
+        end
+
+        it 'adds an offense' do
+          expect_offense(source, engine_file)
+        end
+      end
+    end
+
+    describe 'access of global model on the additional model list from engine' do
+      let(:source) do
+        <<~RUBY
+          AnotherGlobalModel.find(123)
+          ^^^^^^^^^^^^^^^^^^ Direct access of global model `AnotherGlobalModel` from within Rails Engine.
         RUBY
       end
 
