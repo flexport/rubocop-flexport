@@ -266,12 +266,14 @@ module RuboCop
           @protected_engines ||= begin
             unprotected = cop_config['UnprotectedEngines'] || []
             unprotected_camelized = camelize_all(unprotected)
-            all_engines_camelized - unprotected_camelized
+            engines = all_engines_camelized - unprotected_camelized
+            engines = engines.map { |engine| "#{cop_config['EnginesPrefix']}::#{engine}" } if cop_config['EnginesPrefix']
+            engines
           end
         end
 
         def all_engines_camelized
-          all_snake_case = Dir["#{engines_path}*"].map do |e|
+          all_snake_case = cop_config['Engines'] || Dir["#{engines_path}*"].map do |e|
             e.gsub(engines_path, '')
           end
           camelize_all(all_snake_case)
@@ -331,11 +333,14 @@ module RuboCop
         end
 
         def engine_name_from_path(file_path)
-          return nil unless file_path&.include?(engines_path)
+          engine_dir = cop_config['Engines']&.find { |engine| file_path&.include?(engine) }
+          unless engine_dir
+            return nil unless file_path&.include?(engines_path)
 
-          parts = file_path.split(engines_path)
-          engine_dir = parts.last.split('/').first
-          ActiveSupport::Inflector.camelize(engine_dir) if engine_dir
+            parts = file_path.split(engines_path)
+            engine_dir = parts.last.split('/').first
+          end
+          [cop_config['EnginesPrefix'], ActiveSupport::Inflector.camelize(engine_dir)].compact.join('::') if engine_dir
         end
 
         def in_engine_file?(accessed_engine)
