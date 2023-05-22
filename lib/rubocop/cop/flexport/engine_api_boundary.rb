@@ -333,14 +333,19 @@ module RuboCop
         end
 
         def engine_name_from_path(file_path)
-          engine_dir = cop_config['Engines']&.find { |engine| file_path&.include?(engine) }
-          unless engine_dir
-            return nil unless file_path&.include?(engines_path)
-
-            parts = file_path.split(engines_path)
-            engine_dir = parts.last.split('/').first
-          end
+          engine_dir = cop_config['Engines'] ? engine_dir_by_engines(file_path) : engine_dir_by_engines_path(file_path)
           [cop_config['EnginesPrefix'], ActiveSupport::Inflector.camelize(engine_dir)].compact.join('::') if engine_dir
+        end
+
+        def engine_dir_by_engines(file_path)
+          cop_config['Engines'].find { |engine| file_path&.include?("#{engine}/") }
+        end
+
+        def engine_dir_by_engines_path(file_path)
+          return unless file_path&.include?(engines_path)
+
+          parts = file_path.split(engines_path)
+          parts.last.split('/').first
         end
 
         def in_engine_file?(accessed_engine)

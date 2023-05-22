@@ -3,7 +3,7 @@ Flexport/EngineApiBoundary:
   Enabled: false
   VersionAdded: '0.3.0'
   EnginesPath: 'engines/'
-  Engines: []
+  Engines: nil
   EnginesPrefix: nil
   UnprotectedEngines: []
   StronglyProtectedEngines: []
