@@ -145,6 +145,35 @@ module RuboCop
       #     # (No direct associations to models in API-protected engines.)
       #   end
       #
+      # # "Engines" parameter
+      #
+      # The list of engine names parameter can be used instead of "EnginesPath" parameter
+      #
+      # The "Engines" parameter helps in the case when engines are placed in a project's root dir
+      #
+      # @example
+      #
+      #  in *.yml file:
+      #    Engines:
+      #      - my_engine1
+      #      - my_engine2
+      #
+      # # "EnginesPrefix" parameter
+      #
+      # Prefix/namespace of engine classes
+      #
+      # The "EnginesPrefix" parameter helps in the case when engine classes have namespace
+      #
+      # @example
+      #
+      #  module MyNamespace
+      #    class MyEngine::MyModel < ApplicationModel
+      #    end
+      #  end
+      #
+      #  in *.yml file:
+      #    EnginesPrefix: 'MyNamespace'
+      #
       class EngineApiBoundary < Cop
         include EngineApi
         include EngineNodeContext
@@ -219,7 +248,9 @@ module RuboCop
         end
 
         def external_dependency_checksum
-          checksum = engine_api_files_modified_time_checksum(engines_path)
+          checksum = engines_paths.sum('') do |engine_path|
+            engine_api_files_modified_time_checksum(engine_path)
+          end
           return checksum unless check_for_cross_engine_factory_bot?
 
           checksum + spec_factories_modified_time_checksum
@@ -257,9 +288,19 @@ module RuboCop
         end
 
         def engines_path
+          return './' if cop_config['Engines']
+
           path = cop_config['EnginesPath']
           path += '/' unless path.end_with?('/')
           path
+        end
+
+        def engines_paths
+          return [engines_path] unless cop_config['Engines']
+
+          cop_config['Engines'].map do |engine|
+            engine.end_with?('/') ? engine : "#{engine}/"
+          end
         end
 
         def protected_engines
