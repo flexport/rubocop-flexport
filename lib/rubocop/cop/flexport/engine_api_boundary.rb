@@ -118,6 +118,35 @@ module RuboCop
       # This may be useful if you plan to extract several engines into the
       # same network-isolated service.
       #
+      # # "Engines" parameter
+      #
+      # A list of engine names that can be used instead of the "EnginesPath" parameter.
+      #
+      # This helps in the case when engines are placed in a project's root directory.
+      #
+      #  ```yml
+      #  Engines:
+      #    - my_engine1
+      #    - my_engine2
+      #  ```
+      #
+      # # "EnginesPrefix" parameter
+      #
+      # Prefix/namespace of engine classes
+      #
+      # This helps in the case when engine classes have a namespace.
+      #
+      #  ```rb
+      #  module MyNamespace
+      #    class MyEngine::MyModel < ApplicationModel
+      #    end
+      #  end
+      #  ```
+      #
+      #  ```yml
+      #  EnginesPrefix: 'MyNamespace'
+      #  ```
+      #
       # @example
       #
       #   # bad
@@ -144,35 +173,6 @@ module RuboCop
       #   class MyEngine::MyModel < ApplicationModel
       #     # (No direct associations to models in API-protected engines.)
       #   end
-      #
-      # # "Engines" parameter
-      #
-      # The list of engine names parameter can be used instead of "EnginesPath" parameter
-      #
-      # The "Engines" parameter helps in the case when engines are placed in a project's root dir
-      #
-      # @example
-      #
-      #  in *.yml file:
-      #    Engines:
-      #      - my_engine1
-      #      - my_engine2
-      #
-      # # "EnginesPrefix" parameter
-      #
-      # Prefix/namespace of engine classes
-      #
-      # The "EnginesPrefix" parameter helps in the case when engine classes have namespace
-      #
-      # @example
-      #
-      #  module MyNamespace
-      #    class MyEngine::MyModel < ApplicationModel
-      #    end
-      #  end
-      #
-      #  in *.yml file:
-      #    EnginesPrefix: 'MyNamespace'
       #
       class EngineApiBoundary < Cop
         include EngineApi
