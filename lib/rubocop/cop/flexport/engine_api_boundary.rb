@@ -248,8 +248,9 @@ module RuboCop
         end
 
         def external_dependency_checksum
+          @checksums ||= {}
           checksum = engines_paths.sum('') do |engine_path|
-            engine_api_files_modified_time_checksum(engine_path)
+            @checksums[engine_path] ||= engine_api_files_modified_time_checksum(engine_path)
           end
           return checksum unless check_for_cross_engine_factory_bot?
 
