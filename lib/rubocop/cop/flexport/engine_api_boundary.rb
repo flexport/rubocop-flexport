@@ -380,7 +380,10 @@ module RuboCop
         end
 
         def engine_dir_by_engines(file_path)
-          cop_config['Engines'].find { |engine| file_path&.include?("#{engine}/") }
+          cop_config['Engines'].each_with_object({ index: Float::INFINITY }) do |engine, hash|
+            index = file_path&.index("/#{engine}/")
+            hash[:engine] = engine if index && index < hash[:index]
+          end[:engine]
         end
 
         def engine_dir_by_engines_path(file_path)
