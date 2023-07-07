@@ -118,6 +118,35 @@ module RuboCop
       # This may be useful if you plan to extract several engines into the
       # same network-isolated service.
       #
+      # # "Engines" parameter
+      #
+      # A list of engine names that can be used instead of the "EnginesPath" parameter.
+      #
+      # This helps in the case when engines are placed in a project's root directory.
+      #
+      #  ```yml
+      #  Engines:
+      #    - my_engine1
+      #    - my_engine2
+      #  ```
+      #
+      # # "EnginesPrefix" parameter
+      #
+      # Prefix/namespace of engine classes
+      #
+      # This helps in the case when engine classes have a namespace.
+      #
+      #  ```rb
+      #  module MyNamespace
+      #    class MyEngine::MyModel < ApplicationModel
+      #    end
+      #  end
+      #  ```
+      #
+      #  ```yml
+      #  EnginesPrefix: 'MyNamespace'
+      #  ```
+      #
       # @example
       #
       #   # bad
@@ -219,7 +248,10 @@ module RuboCop
         end
 
         def external_dependency_checksum
-          checksum = engine_api_files_modified_time_checksum(engines_path)
+          @checksums ||= {}
+          checksum = engines_paths.sum('') do |engine_path|
+            @checksums[engine_path] ||= engine_api_files_modified_time_checksum(engine_path)
+          end
           return checksum unless check_for_cross_engine_factory_bot?
 
           checksum + spec_factories_modified_time_checksum
@@ -257,21 +289,33 @@ module RuboCop
         end
 
         def engines_path
+          return './' if cop_config['Engines']
+
           path = cop_config['EnginesPath']
           path += '/' unless path.end_with?('/')
           path
+        end
+
+        def engines_paths
+          return [engines_path] unless cop_config['Engines']
+
+          cop_config['Engines'].map do |engine|
+            engine.end_with?('/') ? engine : "#{engine}/"
+          end
         end
 
         def protected_engines
           @protected_engines ||= begin
             unprotected = cop_config['UnprotectedEngines'] || []
             unprotected_camelized = camelize_all(unprotected)
-            all_engines_camelized - unprotected_camelized
+            engines = all_engines_camelized - unprotected_camelized
+            engines = engines.map { |engine| "#{cop_config['EnginesPrefix']}::#{engine}" } if cop_config['EnginesPrefix']
+            engines
           end
         end
 
         def all_engines_camelized
-          all_snake_case = Dir["#{engines_path}*"].map do |e|
+          all_snake_case = cop_config['Engines'] || Dir["#{engines_path}*"].map do |e|
             e.gsub(engines_path, '')
           end
           camelize_all(all_snake_case)
@@ -331,11 +375,22 @@ module RuboCop
         end
 
         def engine_name_from_path(file_path)
-          return nil unless file_path&.include?(engines_path)
+          engine_dir = cop_config['Engines'] ? engine_dir_by_engines(file_path) : engine_dir_by_engines_path(file_path)
+          [cop_config['EnginesPrefix'], ActiveSupport::Inflector.camelize(engine_dir)].compact.join('::') if engine_dir
+        end
+
+        def engine_dir_by_engines(file_path)
+          cop_config['Engines'].each_with_object({ index: Float::INFINITY }) do |engine, hash|
+            index = file_path&.index("/#{engine}/")
+            hash[:engine] = engine if index && index < hash[:index]
+          end[:engine]
+        end
+
+        def engine_dir_by_engines_path(file_path)
+          return unless file_path&.include?(engines_path)
 
           parts = file_path.split(engines_path)
-          engine_dir = parts.last.split('/').first
-          ActiveSupport::Inflector.camelize(engine_dir) if engine_dir
+          parts.last.split('/').first
         end
 
         def in_engine_file?(accessed_engine)
