@@ -1244,4 +1244,56 @@ RSpec.describe RuboCop::Cop::Flexport::EngineApiBoundary do
       end
     end
   end
+
+  context 'with EnginesPrefix parameter' do
+    before do
+      config_params.merge!('EnginesPrefix' => 'MyNamespace')
+    end
+
+    describe 'with no leading ::' do
+      let(:source) do
+        <<~RUBY
+      class Controller < ApplicationController
+        def foo
+          MyNamespace::MyEngine::Model.new
+          ^^^^^^^^^^^^^^^^^^^^^ Direct access of MyNamespace::MyEngine engine. Only access engine via MyNamespace::MyEngine::Api.
+          MyNamespace::MyEngine::NoApi::Nested.foo
+          ^^^^^^^^^^^^^^^^^^^^^ Direct access of MyNamespace::MyEngine engine. Only access engine via MyNamespace::MyEngine::Api.
+          res = MyNamespace::MyEngine::NestedClass
+                ^^^^^^^^^^^^^^^^^^^^^ Direct access of MyNamespace::MyEngine engine. Only access engine via MyNamespace::MyEngine::Api.
+          MyNamespace::MyEngine
+          ^^^^^^^^^^^^^^^^^^^^^ Direct access of MyNamespace::MyEngine engine. Only access engine via MyNamespace::MyEngine::Api.
+        end
+      end
+        RUBY
+      end
+
+      it 'adds an offense' do
+        expect_offense(source)
+      end
+    end
+
+    describe 'with leading ::' do
+      let(:source) do
+        <<~RUBY
+      class Controller < ApplicationController
+        def foo
+          ::MyNamespace::MyEngine::Model.new
+          ^^^^^^^^^^^^^^^^^^^^^^^ Direct access of MyNamespace::MyEngine engine. Only access engine via MyNamespace::MyEngine::Api.
+          ::MyNamespace::MyEngine::NoApi::Nested.foo
+          ^^^^^^^^^^^^^^^^^^^^^^^ Direct access of MyNamespace::MyEngine engine. Only access engine via MyNamespace::MyEngine::Api.
+          res = ::MyNamespace::MyEngine::NestedClass
+                ^^^^^^^^^^^^^^^^^^^^^^^ Direct access of MyNamespace::MyEngine engine. Only access engine via MyNamespace::MyEngine::Api.
+          ::MyNamespace::MyEngine
+          ^^^^^^^^^^^^^^^^^^^^^^^ Direct access of MyNamespace::MyEngine engine. Only access engine via MyNamespace::MyEngine::Api.
+        end
+      end
+        RUBY
+      end
+
+      it 'adds an offense' do
+        expect_offense(source)
+      end
+    end
+  end
 end

@@ -50,7 +50,7 @@ module RuboCop
       # engine, add it to the `FactoryBotGlobalAccessAllowedEngines` list in
       # .rubocop.yml.
       #
-      class GlobalModelAccessFromEngine < Cop
+      class GlobalModelAccessFromEngine < Base
         include EngineNodeContext
         include FactoryBotUsage
 

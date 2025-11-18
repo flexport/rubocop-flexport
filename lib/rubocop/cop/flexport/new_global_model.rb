@@ -61,7 +61,7 @@ module RuboCop
       #   class MyEngine::MyNewEngineModel < ApplicationRecord
       #     # ...
       #   end
-      class NewGlobalModel < Cop
+      class NewGlobalModel < Base
         ALLOW_NAMESPACES_MSG =
           'Do not add new top-level global models in `app/models`. ' \
           'Prefer namespaced models like `app/models/foo/bar.rb` or ' \
